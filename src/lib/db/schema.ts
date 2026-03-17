@@ -24,6 +24,16 @@ export const homeTypeEnum = pgEnum("home_type", [
   "apartment",
   "multi_family",
   "mobile_home",
+  "vacation_home",
+  "rental_property",
+  "apartment_building",
+  "office_commercial",
+  "warehouse_industrial",
+]);
+
+export const homeRoleEnum = pgEnum("home_role", [
+  "i_live_here",
+  "i_manage_this",
 ]);
 
 export const systemTypeEnum = pgEnum("system_type", [
@@ -183,6 +193,7 @@ export const homes = pgTable(
     state: varchar("state", { length: 50 }),
     zipCode: varchar("zip_code", { length: 20 }),
     country: varchar("country", { length: 2 }).default("US"),
+    ownerRole: homeRoleEnum("owner_role").default("i_live_here"),
     ownershipDate: date("ownership_date"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

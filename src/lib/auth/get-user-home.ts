@@ -1,42 +1,63 @@
 import { db } from "@/lib/db";
 import { homes, homeMembers } from "@/lib/db/schema";
-import { eq, or } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 /**
- * Get the first home the user has access to — either as owner or member.
+ * Get all homes the user has access to — as owner or member.
  */
-export async function getUserHome(userId: string) {
-  // Check membership first (includes owners)
-  const [membership] = await db
-    .select({ homeId: homeMembers.homeId, role: homeMembers.role })
+export async function getUserHomes(userId: string) {
+  const memberships = await db
+    .select({
+      homeId: homeMembers.homeId,
+      role: homeMembers.role,
+    })
     .from(homeMembers)
-    .where(eq(homeMembers.userId, userId))
-    .limit(1);
+    .where(eq(homeMembers.userId, userId));
 
-  if (membership) {
-    const [home] = await db
+  if (memberships.length === 0) {
+    // Fallback: check legacy ownership (pre home_members)
+    const ownedHomes = await db
       .select()
       .from(homes)
-      .where(eq(homes.id, membership.homeId));
-    return home ? { ...home, memberRole: membership.role } : null;
+      .where(eq(homes.userId, userId));
+
+    // Backfill memberships
+    for (const home of ownedHomes) {
+      await db.insert(homeMembers).values({
+        homeId: home.id,
+        userId,
+        role: "owner",
+      });
+    }
+
+    return ownedHomes.map((h) => ({ ...h, memberRole: "owner" as const }));
   }
 
-  // Fallback: check legacy ownership (for users who onboarded before home_members existed)
-  const [home] = await db
+  const homeIds = memberships.map((m) => m.homeId);
+  const userHomes = await db
     .select()
     .from(homes)
-    .where(eq(homes.userId, userId))
-    .limit(1);
+    .where(inArray(homes.id, homeIds));
 
-  if (home) {
-    // Backfill: create a membership record for the owner
-    await db.insert(homeMembers).values({
-      homeId: home.id,
-      userId,
-      role: "owner",
-    });
-    return { ...home, memberRole: "owner" as const };
+  const roleMap = new Map(memberships.map((m) => [m.homeId, m.role]));
+
+  return userHomes.map((h) => ({
+    ...h,
+    memberRole: roleMap.get(h.id) ?? "member",
+  }));
+}
+
+/**
+ * Get a specific home by ID if the user has access, or the first home if no ID provided.
+ */
+export async function getUserHome(userId: string, homeId?: string) {
+  const allHomes = await getUserHomes(userId);
+
+  if (allHomes.length === 0) return null;
+
+  if (homeId) {
+    return allHomes.find((h) => h.id === homeId) ?? null;
   }
 
-  return null;
+  return allHomes[0];
 }

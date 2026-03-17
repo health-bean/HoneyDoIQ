@@ -13,7 +13,9 @@ export type TaskPriority = "safety" | "prevent_damage" | "efficiency" | "cosmeti
 
 export type HomeType =
   | "single_family" | "townhouse" | "condo"
-  | "apartment" | "multi_family" | "mobile_home";
+  | "apartment" | "multi_family" | "mobile_home"
+  | "vacation_home" | "rental_property" | "apartment_building"
+  | "office_commercial" | "warehouse_industrial";
 
 export type ApplianceCategory =
   | "refrigerator" | "dishwasher" | "washing_machine" | "dryer"
@@ -60,10 +62,10 @@ export interface TaskTemplate {
   whyItMatters: string | null;
 }
 
-const ALL_DETACHED: HomeType[] = ["single_family", "townhouse", "multi_family", "mobile_home"];
-const ALL_WITH_YARD: HomeType[] = ["single_family", "townhouse", "multi_family"];
-const ALL_HOMES: HomeType[] = ["single_family", "townhouse", "condo", "apartment", "multi_family", "mobile_home"];
-const HOUSES_ONLY: HomeType[] = ["single_family", "multi_family", "mobile_home"];
+const ALL_DETACHED: HomeType[] = ["single_family", "townhouse", "multi_family", "mobile_home", "vacation_home", "rental_property"];
+const ALL_WITH_YARD: HomeType[] = ["single_family", "townhouse", "multi_family", "vacation_home", "rental_property"];
+const ALL_HOMES: HomeType[] = ["single_family", "townhouse", "condo", "apartment", "multi_family", "mobile_home", "vacation_home", "rental_property", "apartment_building", "office_commercial", "warehouse_industrial"];
+const HOUSES_ONLY: HomeType[] = ["single_family", "multi_family", "mobile_home", "vacation_home", "rental_property"];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HVAC

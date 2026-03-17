@@ -27,6 +27,7 @@ import type {
 interface FormData {
   name: string;
   type: string;
+  ownerRole: string;
   yearBuilt: string;
   sqft: string;
   zip: string;
@@ -57,6 +58,16 @@ const HOME_TYPES = [
   { value: "apartment", label: "Apartment" },
   { value: "multi_family", label: "Multi-Family" },
   { value: "mobile_home", label: "Mobile Home" },
+  { value: "vacation_home", label: "Vacation Home" },
+  { value: "rental_property", label: "Rental Property" },
+  { value: "apartment_building", label: "Apartment Building" },
+  { value: "office_commercial", label: "Office / Commercial" },
+  { value: "warehouse_industrial", label: "Warehouse / Industrial" },
+];
+
+const OWNER_ROLES = [
+  { value: "i_live_here", label: "I live here" },
+  { value: "i_manage_this", label: "I own/manage this property" },
 ];
 
 const US_STATES = [
@@ -368,14 +379,30 @@ function StepBasicsAndLocation({
           value={data.name}
           onChange={(e) => onChange({ name: e.target.value })}
         />
+        <Select
+          label="Property Type"
+          placeholder="Select"
+          options={HOME_TYPES}
+          value={data.type}
+          onChange={(e) => onChange({ type: e.target.value })}
+        />
+        <div className="flex gap-2">
+          {OWNER_ROLES.map((role) => (
+            <button
+              key={role.value}
+              type="button"
+              onClick={() => onChange({ ownerRole: role.value })}
+              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                data.ownerRole === role.value
+                  ? "border-primary bg-[var(--color-primary-50)] text-primary dark:bg-[var(--color-primary-900)]/20"
+                  : "border-border text-muted-foreground hover:border-muted-foreground/30"
+              }`}
+            >
+              {role.label}
+            </button>
+          ))}
+        </div>
         <div className="grid grid-cols-2 gap-4">
-          <Select
-            label="Home Type"
-            placeholder="Select"
-            options={HOME_TYPES}
-            value={data.type}
-            onChange={(e) => onChange({ type: e.target.value })}
-          />
           <Input
             label="Year Built"
             type="number"
@@ -383,16 +410,14 @@ function StepBasicsAndLocation({
             value={data.yearBuilt}
             onChange={(e) => onChange({ yearBuilt: e.target.value })}
           />
+          <Input
+            label="Square Footage"
+            type="number"
+            placeholder="Optional"
+            value={data.sqft}
+            onChange={(e) => onChange({ sqft: e.target.value })}
+          />
         </div>
-        <Input
-          label="Square Footage"
-          type="number"
-          placeholder="Optional"
-          helperText="Approximate living space"
-          value={data.sqft}
-          onChange={(e) => onChange({ sqft: e.target.value })}
-        />
-
         <hr className="border-border" />
 
         <div className="grid grid-cols-2 gap-4">
@@ -858,6 +883,7 @@ export default function OnboardingPage() {
   const [form, setForm] = useState<FormData>({
     name: "",
     type: "",
+    ownerRole: "i_live_here",
     yearBuilt: "",
     sqft: "",
     zip: "",
@@ -957,6 +983,7 @@ export default function OnboardingPage() {
             home: {
               name: form.name,
               type: form.type,
+              ownerRole: form.ownerRole,
               yearBuilt: Number(form.yearBuilt),
               sqft: form.sqft ? Number(form.sqft) : null,
               zip: form.zip,

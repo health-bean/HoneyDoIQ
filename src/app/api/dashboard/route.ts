@@ -6,13 +6,15 @@ import { taskInstances, homeMembers, users } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { calculateHomeHealthScore } from "@/lib/tasks/scheduling";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getAppUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const home = await getUserHome(user.id);
+  const { searchParams } = new URL(request.url);
+  const homeId = searchParams.get("homeId") ?? undefined;
+  const home = await getUserHome(user.id, homeId);
 
   if (!home) {
     return NextResponse.json({ home: null, tasks: [], score: null });

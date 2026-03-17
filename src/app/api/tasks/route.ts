@@ -5,13 +5,15 @@ import { db } from "@/lib/db";
 import { taskInstances } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getAppUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const home = await getUserHome(user.id);
+  const { searchParams } = new URL(request.url);
+  const homeId = searchParams.get("homeId") ?? undefined;
+  const home = await getUserHome(user.id, homeId);
 
   if (!home) {
     return NextResponse.json({ tasks: [] });
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const home = await getUserHome(user.id);
+  const home = await getUserHome(user.id, body.homeId);
 
   if (!home) {
     return NextResponse.json({ error: "No home found" }, { status: 400 });

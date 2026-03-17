@@ -18,6 +18,7 @@ interface OnboardingPayload {
   home: {
     name: string;
     type: string;
+    ownerRole: string;
     yearBuilt: number;
     sqft: number | null;
     zip: string;
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       zipCode: body.home.zip,
       state: body.home.state,
       climateZone: body.home.climateZone,
+      ownerRole: (body.home.ownerRole || "i_live_here") as "i_live_here" | "i_manage_this",
     })
     .returning();
 
