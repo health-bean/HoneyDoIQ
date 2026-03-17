@@ -196,6 +196,64 @@ export const homes = pgTable(
   }),
 );
 
+export const homeMemberRoleEnum = pgEnum("home_member_role", [
+  "owner",
+  "member",
+]);
+
+export const homeInviteStatusEnum = pgEnum("home_invite_status", [
+  "pending",
+  "accepted",
+  "declined",
+]);
+
+export const homeMembers = pgTable(
+  "home_members",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    homeId: uuid("home_id")
+      .notNull()
+      .references(() => homes.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: homeMemberRoleEnum("role").notNull().default("member"),
+    invitedBy: uuid("invited_by").references(() => users.id),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    homeIdIdx: index("home_members_home_id_idx").on(table.homeId),
+    userIdIdx: index("home_members_user_id_idx").on(table.userId),
+  }),
+);
+
+export const homeInvites = pgTable(
+  "home_invites",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    homeId: uuid("home_id")
+      .notNull()
+      .references(() => homes.id, { onDelete: "cascade" }),
+    invitedEmail: varchar("invited_email", { length: 255 }).notNull(),
+    invitedBy: uuid("invited_by")
+      .notNull()
+      .references(() => users.id),
+    status: homeInviteStatusEnum("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    emailIdx: index("home_invites_email_idx").on(table.invitedEmail),
+  }),
+);
+
 export const homeSystems = pgTable(
   "home_systems",
   {
@@ -502,6 +560,7 @@ export const homeHealthScores = pgTable("home_health_scores", {
 
 export const usersRelations = relations(users, ({ many, one }) => ({
   homes: many(homes),
+  homeMembers: many(homeMembers),
   contractors: many(contractors),
   documents: many(documents),
   taskCompletions: many(taskCompletions),
@@ -511,12 +570,24 @@ export const usersRelations = relations(users, ({ many, one }) => ({
 
 export const homesRelations = relations(homes, ({ one, many }) => ({
   user: one(users, { fields: [homes.userId], references: [users.id] }),
+  members: many(homeMembers),
+  invites: many(homeInvites),
   rooms: many(rooms),
   appliances: many(appliances),
   homeSystems: many(homeSystems),
   taskInstances: many(taskInstances),
   documents: many(documents),
   healthScores: many(homeHealthScores),
+}));
+
+export const homeMembersRelations = relations(homeMembers, ({ one }) => ({
+  home: one(homes, { fields: [homeMembers.homeId], references: [homes.id] }),
+  user: one(users, { fields: [homeMembers.userId], references: [users.id] }),
+}));
+
+export const homeInvitesRelations = relations(homeInvites, ({ one }) => ({
+  home: one(homes, { fields: [homeInvites.homeId], references: [homes.id] }),
+  inviter: one(users, { fields: [homeInvites.invitedBy], references: [users.id] }),
 }));
 
 export const homeSystemsRelations = relations(homeSystems, ({ one }) => ({

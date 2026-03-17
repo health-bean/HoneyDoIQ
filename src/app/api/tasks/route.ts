@@ -1,20 +1,17 @@
 import { NextResponse } from "next/server";
 import { getAppUser } from "@/lib/auth/get-app-user";
+import { getUserHome } from "@/lib/auth/get-user-home";
 import { db } from "@/lib/db";
-import { homes, taskInstances, taskCompletions } from "@/lib/db/schema";
-import { eq, and, asc, desc, sql } from "drizzle-orm";
+import { taskInstances } from "@/lib/db/schema";
+import { eq, asc } from "drizzle-orm";
 
-export async function GET(request: Request) {
+export async function GET() {
   const user = await getAppUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [home] = await db
-    .select()
-    .from(homes)
-    .where(eq(homes.userId, user.id))
-    .limit(1);
+  const home = await getUserHome(user.id);
 
   if (!home) {
     return NextResponse.json({ tasks: [] });
@@ -37,12 +34,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-
-  const [home] = await db
-    .select()
-    .from(homes)
-    .where(eq(homes.userId, user.id))
-    .limit(1);
+  const home = await getUserHome(user.id);
 
   if (!home) {
     return NextResponse.json({ error: "No home found" }, { status: 400 });

@@ -2,6 +2,8 @@ import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 import {
   users,
   homes,
+  homeMembers,
+  homeInvites,
   homeSystems,
   rooms,
   appliances,
@@ -22,6 +24,14 @@ export type NewUser = InferInsertModel<typeof users>;
 // ─── Homes ───────────────────────────────────────────────────────────────────
 export type Home = InferSelectModel<typeof homes>;
 export type NewHome = InferInsertModel<typeof homes>;
+
+// ─── Home Members ───────────────────────────────────────────────────────────
+export type HomeMember = InferSelectModel<typeof homeMembers>;
+export type NewHomeMember = InferInsertModel<typeof homeMembers>;
+
+// ─── Home Invites ───────────────────────────────────────────────────────────
+export type HomeInvite = InferSelectModel<typeof homeInvites>;
+export type NewHomeInvite = InferInsertModel<typeof homeInvites>;
 
 // ─── Home Systems ────────────────────────────────────────────────────────────
 export type HomeSystem = InferSelectModel<typeof homeSystems>;

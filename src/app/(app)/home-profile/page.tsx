@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Button,
   Card,
@@ -10,6 +10,9 @@ import {
   CardContent,
   CardFooter,
   Badge,
+  Input,
+  Avatar,
+  Dialog,
 } from "@/components/ui";
 
 /* ------------------------------------------------------------------ */
@@ -122,6 +125,164 @@ function Stars({ count }: { count: number }) {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/*  Family Members Section (live data)                                 */
+/* ------------------------------------------------------------------ */
+
+interface Member {
+  id: string;
+  name: string | null;
+  email: string;
+  avatarUrl: string | null;
+  role: string;
+}
+
+interface Invite {
+  id: string;
+  invitedEmail: string;
+  status: string;
+  createdAt: string;
+}
+
+function FamilyMembersSection() {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
+
+  const fetchMembers = useCallback(async () => {
+    const res = await fetch("/api/home/invite");
+    if (res.ok) {
+      const data = await res.json();
+      setMembers(data.members || []);
+      setInvites(data.invites || []);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviteLoading(true);
+    setInviteError("");
+    setInviteSuccess("");
+
+    try {
+      const res = await fetch("/api/home/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim() }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setInviteError(data.error || "Failed to send invite");
+      } else if (data.autoAccepted) {
+        setInviteSuccess(`${inviteEmail} has been added to your home!`);
+        setInviteEmail("");
+        fetchMembers();
+      } else {
+        setInviteSuccess(`Invite sent! ${inviteEmail} will be added when they sign up.`);
+        setInviteEmail("");
+        fetchMembers();
+      }
+    } catch {
+      setInviteError("Something went wrong");
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Family Members</h2>
+        <Button variant="outline" size="sm" onClick={() => setShowInvite(true)}>
+          + Invite
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {members.map((m) => (
+          <Card key={m.id}>
+            <CardContent className="flex items-center gap-3 p-3">
+              <Avatar src={m.avatarUrl} fallback={m.name || m.email} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {m.name || m.email}
+                </p>
+                {m.name && (
+                  <p className="text-xs text-muted-foreground truncate">{m.email}</p>
+                )}
+              </div>
+              <Badge variant={m.role === "owner" ? "default" : "info"} size="sm">
+                {m.role === "owner" ? "Owner" : "Member"}
+              </Badge>
+            </CardContent>
+          </Card>
+        ))}
+
+        {invites.map((inv) => (
+          <Card key={inv.id} className="opacity-60">
+            <CardContent className="flex items-center gap-3 p-3">
+              <Avatar fallback={inv.invitedEmail} size="sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-muted-foreground truncate">{inv.invitedEmail}</p>
+              </div>
+              <Badge variant="warning" size="sm">Pending</Badge>
+            </CardContent>
+          </Card>
+        ))}
+
+        {members.length === 0 && invites.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Invite family members to share this home&apos;s maintenance plan.
+          </p>
+        )}
+      </div>
+
+      <Dialog
+        open={showInvite}
+        onClose={() => {
+          setShowInvite(false);
+          setInviteError("");
+          setInviteSuccess("");
+        }}
+        title="Invite Family Member"
+        description="They'll see the same home, tasks, and can mark things complete."
+        size="sm"
+      >
+        <div className="flex flex-col gap-4">
+          <Input
+            label="Email address"
+            type="email"
+            placeholder="family@example.com"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            error={inviteError}
+          />
+          {inviteSuccess && (
+            <p className="text-sm text-[var(--color-success-600)]">{inviteSuccess}</p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowInvite(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleInvite} loading={inviteLoading} disabled={!inviteEmail.trim()}>
+              Send Invite
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+    </section>
+  );
+}
+
 export default function HomeProfilePage() {
   const [home] = useState(HOME);
 
@@ -208,6 +369,9 @@ export default function HomeProfilePage() {
           </div>
         ))}
       </section>
+
+      {/* ---- Family Members ---- */}
+      <FamilyMembersSection />
 
       {/* ---- Contractors ---- */}
       <section className="flex flex-col gap-4">

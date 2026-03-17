@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAppUser } from "@/lib/auth/get-app-user";
+import { getUserHome } from "@/lib/auth/get-user-home";
 import { db } from "@/lib/db";
-import { homes, taskInstances } from "@/lib/db/schema";
-import { eq, and, lte, gte, asc, sql } from "drizzle-orm";
+import { taskInstances, homeMembers, users } from "@/lib/db/schema";
+import { eq, and, asc } from "drizzle-orm";
 import { calculateHomeHealthScore } from "@/lib/tasks/scheduling";
 
 export async function GET() {
@@ -11,12 +12,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Get user's first home
-  const [home] = await db
-    .select()
-    .from(homes)
-    .where(eq(homes.userId, user.id))
-    .limit(1);
+  const home = await getUserHome(user.id);
 
   if (!home) {
     return NextResponse.json({ home: null, tasks: [], score: null });
@@ -29,7 +25,7 @@ export async function GET() {
     .where(and(eq(taskInstances.homeId, home.id), eq(taskInstances.isActive, true)))
     .orderBy(asc(taskInstances.nextDueDate));
 
-  // Calculate health score
+  // Calculate upkeep score
   const score = calculateHomeHealthScore(
     tasks.map((t) => ({
       nextDueDate: new Date(t.nextDueDate),
@@ -51,6 +47,18 @@ export async function GET() {
     (t) => t.nextDueDate >= today && t.nextDueDate <= weekFromNow
   );
 
+  // Get household members
+  const members = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      avatarUrl: users.avatarUrl,
+      role: homeMembers.role,
+    })
+    .from(homeMembers)
+    .innerJoin(users, eq(homeMembers.userId, users.id))
+    .where(eq(homeMembers.homeId, home.id));
+
   return NextResponse.json({
     home: {
       id: home.id,
@@ -62,5 +70,7 @@ export async function GET() {
     upcoming: upcomingTasks.slice(0, 10),
     totalActive: tasks.length,
     userName: user.name,
+    members,
+    memberRole: home.memberRole,
   });
 }

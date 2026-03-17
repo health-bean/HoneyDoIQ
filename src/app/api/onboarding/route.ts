@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { users, homes, homeSystems, appliances, taskInstances } from "@/lib/db/schema";
+import { users, homes, homeMembers, homeSystems, appliances, taskInstances } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getApplicableTemplates } from "@/lib/tasks/scheduling";
 import { getNextDueDate } from "@/lib/tasks/scheduling";
@@ -73,6 +73,13 @@ export async function POST(request: Request) {
       climateZone: body.home.climateZone,
     })
     .returning();
+
+  // Create owner membership
+  await db.insert(homeMembers).values({
+    homeId: home.id,
+    userId: appUser.id,
+    role: "owner",
+  });
 
   // Create home systems
   if (body.systems.length > 0) {
