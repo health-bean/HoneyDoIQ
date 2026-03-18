@@ -1,19 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { signOut } from "@/lib/auth/actions";
-import {
-  Button,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-  Badge,
-  Select,
-  Avatar,
-} from "@/components/ui";
 
 /* ------------------------------------------------------------------ */
 /*  Mock Data & Constants                                              */
@@ -56,48 +44,98 @@ const REMINDER_DAY_OPTIONS = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Toggle Switch                                                      */
+/*  iOS Toggle Switch                                                  */
 /* ------------------------------------------------------------------ */
 
 function Toggle({
   checked,
   onChange,
   label,
-  description,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
-  description?: string;
 }) {
   const id = label.toLowerCase().replace(/\s+/g, "-");
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex flex-col">
-        <label htmlFor={id} className="text-sm font-medium text-foreground cursor-pointer">
-          {label}
-        </label>
-        {description && (
-          <span className="text-xs text-muted-foreground">{description}</span>
-        )}
-      </div>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-          checked ? "bg-primary" : "bg-muted"
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`w-11 h-[26px] rounded-full relative cursor-pointer transition-colors ${
+        checked
+          ? "bg-[var(--color-primary-500)]"
+          : "bg-[var(--color-neutral-200)]"
+      }`}
+    >
+      <span
+        className={`block w-5 h-5 rounded-full bg-white shadow-sm absolute top-[3px] transition-transform ${
+          checked ? "left-[21px]" : "left-[3px]"
         }`}
-      >
-        <span
-          className={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-            checked ? "translate-x-5" : "translate-x-0.5"
-          }`}
-        />
-      </button>
+      />
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Section wrapper                                                    */
+/* ------------------------------------------------------------------ */
+
+function Section({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-2">
+        {label}
+      </p>
+      <div className="bg-white dark:bg-[var(--color-neutral-900)] rounded-2xl border border-[var(--color-neutral-200)] dark:border-[var(--color-neutral-700)] overflow-hidden">
+        {children}
+      </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Row                                                                */
+/* ------------------------------------------------------------------ */
+
+function Row({
+  label,
+  value,
+  chevron = false,
+  toggle,
+  onClick,
+}: {
+  label: string;
+  value?: string;
+  chevron?: boolean;
+  toggle?: React.ReactNode;
+  onClick?: () => void;
+}) {
+  const Wrapper = onClick ? "button" : "div";
+  return (
+    <Wrapper
+      {...(onClick ? { type: "button" as const, onClick } : {})}
+      className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--color-neutral-100)] dark:border-[var(--color-neutral-700)] last:border-b-0 w-full text-left"
+    >
+      <span className="text-sm font-semibold text-[var(--color-neutral-900)] dark:text-neutral-100">
+        {label}
+      </span>
+      {toggle ?? (
+        <span className="text-[13px] text-neutral-400 font-medium">
+          {value}
+          {chevron && " \u203A"}
+        </span>
+      )}
+    </Wrapper>
   );
 }
 
@@ -108,10 +146,9 @@ function Toggle({
 export default function SettingsPage() {
   /* Notification prefs */
   const [pushEnabled, setPushEnabled] = useState(true);
-  const [emailEnabled, setEmailEnabled] = useState(true);
   const [weeklyDigest, setWeeklyDigest] = useState(false);
   const [reminderTime, setReminderTime] = useState("09:00");
-  const [reminderDays, setReminderDays] = useState<number[]>([1, 3]);
+  const [reminderDays, setReminderDays] = useState<number[]>([1, 3, 7]);
 
   /* App prefs */
   const [timezone, setTimezone] = useState("America/Chicago");
@@ -123,153 +160,79 @@ export default function SettingsPage() {
     );
   }
 
+  /* Derive display values */
+  const reminderTimeLabel =
+    REMINDER_TIME_OPTIONS.find((o) => o.value === reminderTime)?.label ??
+    reminderTime;
+
+  const reminderDaysLabel = reminderDays.sort((a, b) => a - b).join(", ") + " days";
+
+  const timezoneLabel =
+    TIMEZONE_OPTIONS.find((o) => o.value === timezone)?.label ?? timezone;
+
+  const themeLabel =
+    THEME_OPTIONS.find((o) => o.value === theme)?.label ?? theme;
+
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-8">
-      <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+    <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8">
+      <h1 className="text-[22px] font-extrabold tracking-tight mb-5">
+        Settings
+      </h1>
 
-      {/* ---- Profile ---- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <Avatar size="lg" fallback={USER.name} src={USER.avatarUrl} alt={USER.name} />
-            <div className="flex flex-1 flex-col gap-0.5">
-              <span className="text-base font-medium text-foreground">{USER.name}</span>
-              <span className="text-sm text-muted-foreground">{USER.email}</span>
-            </div>
-            <Button variant="outline" size="sm">
-              Edit Profile
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* ---- Notifications ---- */}
+      <Section label="Notifications">
+        <Row
+          label="Push notifications"
+          toggle={
+            <Toggle
+              checked={pushEnabled}
+              onChange={setPushEnabled}
+              label="Push notifications"
+            />
+          }
+        />
+        <Row
+          label="Weekly digest email"
+          toggle={
+            <Toggle
+              checked={weeklyDigest}
+              onChange={setWeeklyDigest}
+              label="Weekly digest email"
+            />
+          }
+        />
+        <Row label="Reminder time" value={reminderTimeLabel} chevron />
+        <Row label="Remind me before" value={reminderDaysLabel} chevron />
+      </Section>
 
-      {/* ---- Notification Preferences ---- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Notification Preferences</CardTitle>
-          <CardDescription>Choose how and when you want to be reminded.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <Toggle
-            checked={pushEnabled}
-            onChange={setPushEnabled}
-            label="Push Notifications"
-            description="Receive push notifications on your device"
-          />
-          <Toggle
-            checked={emailEnabled}
-            onChange={setEmailEnabled}
-            label="Email Reminders"
-            description="Get maintenance reminders via email"
-          />
-          <Toggle
-            checked={weeklyDigest}
-            onChange={setWeeklyDigest}
-            label="Weekly Digest"
-            description="Summary of upcoming tasks every Monday"
-          />
+      {/* ---- Account ---- */}
+      <Section label="Account">
+        <Row label="Email" value={USER.email} />
+        <Row label="Name" value={USER.name} chevron />
+        <Row label="Timezone" value={timezoneLabel} chevron />
+      </Section>
 
-          <hr className="border-border" />
-
-          <Select
-            label="Reminder Time"
-            options={REMINDER_TIME_OPTIONS}
-            value={reminderTime}
-            onChange={(e) => setReminderTime(e.target.value)}
-          />
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-foreground">Days Before Due</span>
-            <div className="flex gap-2">
-              {REMINDER_DAY_OPTIONS.map((opt) => {
-                const selected = reminderDays.includes(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => toggleReminderDay(opt.value)}
-                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      selected
-                        ? "border-primary bg-primary text-white"
-                        : "border-border bg-transparent text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ---- App Preferences ---- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>App Preferences</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <Select
-            label="Timezone"
-            options={TIMEZONE_OPTIONS}
-            value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-          />
-          <Select
-            label="Theme"
-            options={THEME_OPTIONS}
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-          />
-        </CardContent>
-      </Card>
-
-      {/* ---- Data ---- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Data</CardTitle>
-          <CardDescription>Manage your account data and privacy.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-          <Button variant="outline">Export My Data</Button>
-          <Button variant="danger">Delete Account</Button>
-        </CardContent>
-      </Card>
-
-      {/* Sign Out */}
-      <form action={signOut}>
-        <Button variant="outline" className="w-full" type="submit">
-          Sign Out
-        </Button>
-      </form>
+      {/* ---- Appearance ---- */}
+      <Section label="Appearance">
+        <Row label="Theme" value={themeLabel} chevron />
+      </Section>
 
       {/* ---- About ---- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>About</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground">App Version</span>
-            <Badge size="sm">0.1.0</Badge>
-          </div>
-          <hr className="border-border" />
-          <div className="flex flex-col gap-2">
-            <a href="#" className="text-sm text-primary hover:underline">
-              Privacy Policy
-            </a>
-            <a href="#" className="text-sm text-primary hover:underline">
-              Terms of Service
-            </a>
-            <a href="#" className="text-sm text-primary hover:underline">
-              Help &amp; Support
-            </a>
-          </div>
-        </CardContent>
-      </Card>
+      <Section label="About">
+        <Row label="Version" value="0.1.0" />
+        <Row label="Terms of Service" chevron />
+        <Row label="Privacy Policy" chevron />
+      </Section>
+
+      {/* ---- Sign Out ---- */}
+      <form action={signOut}>
+        <button
+          type="submit"
+          className="w-full py-3.5 bg-[var(--color-danger-50)] rounded-2xl text-[15px] font-bold text-red-600 text-center mt-4"
+        >
+          Sign Out
+        </button>
+      </form>
     </div>
   );
 }

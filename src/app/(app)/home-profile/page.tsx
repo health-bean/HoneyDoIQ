@@ -3,17 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Button,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
   Badge,
   Input,
-  Avatar,
   Dialog,
 } from "@/components/ui";
+import {
+  FileText,
+  ShieldCheck,
+  BookOpen,
+  Receipt,
+  Upload,
+} from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Mock Data                                                          */
@@ -22,7 +22,8 @@ import {
 const HOME = {
   name: "Main House",
   type: "Single Family",
-  yearBuilt: 2004,
+  yearBuilt: 1995,
+  sqft: "2,400",
   address: "1842 Maple Ridge Dr, Austin, TX 78745",
 };
 
@@ -32,16 +33,16 @@ const SYSTEMS: {
   subtype: string;
   active: boolean;
 }[] = [
-  { emoji: "🌡️", name: "HVAC", subtype: "Forced Air", active: true },
-  { emoji: "🚿", name: "Plumbing", subtype: "Copper / PEX", active: true },
-  { emoji: "⚡", name: "Electrical", subtype: "200 Amp Panel", active: true },
-  { emoji: "🏠", name: "Roofing", subtype: "Asphalt Shingle", active: true },
-  { emoji: "🧱", name: "Foundation", subtype: "Basement", active: true },
-  { emoji: "💧", name: "Water Supply", subtype: "Municipal", active: true },
-  { emoji: "🔧", name: "Sewer", subtype: "Municipal", active: true },
-  { emoji: "🌱", name: "Irrigation", subtype: "In-Ground Zones", active: true },
-  { emoji: "☀️", name: "Solar", subtype: "N/A", active: false },
-  { emoji: "🔥", name: "Fireplace", subtype: "N/A", active: false },
+  { emoji: "\u{1F321}\u{FE0F}", name: "HVAC", subtype: "Forced Air", active: true },
+  { emoji: "\u{1F6BF}", name: "Plumbing", subtype: "Copper / PEX", active: true },
+  { emoji: "\u{26A1}", name: "Electrical", subtype: "200 Amp Panel", active: true },
+  { emoji: "\u{1F3E0}", name: "Roofing", subtype: "Asphalt Shingle", active: true },
+  { emoji: "\u{1F9F1}", name: "Foundation", subtype: "Basement", active: true },
+  { emoji: "\u{1F4A7}", name: "Water Supply", subtype: "Municipal", active: true },
+  { emoji: "\u{1F527}", name: "Sewer", subtype: "Municipal", active: true },
+  { emoji: "\u{1F331}", name: "Irrigation", subtype: "In-Ground Zones", active: true },
+  { emoji: "\u{2600}\u{FE0F}", name: "Solar", subtype: "N/A", active: false },
+  { emoji: "\u{1F525}", name: "Fireplace", subtype: "N/A", active: false },
 ];
 
 interface Appliance {
@@ -62,68 +63,51 @@ const APPLIANCES: Appliance[] = [
   { id: "6", name: "Water Heater", brand: "Rheem", model: "PROG50-38N", room: "Basement", warranty: "expired" },
 ];
 
-interface Contractor {
-  id: string;
-  name: string;
-  company: string;
-  specialty: string;
-  phone: string;
-  rating: number;
-}
-
-const CONTRACTORS: Contractor[] = [
-  { id: "1", name: "Mike Torres", company: "Torres HVAC", specialty: "HVAC", phone: "(512) 555-0147", rating: 5 },
-  { id: "2", name: "Lisa Chen", company: "Austin Elite Plumbing", specialty: "Plumbing", phone: "(512) 555-0293", rating: 4 },
-  { id: "3", name: "James Okafor", company: "BrightSpark Electric", specialty: "Electrical", phone: "(512) 555-0381", rating: 5 },
-];
-
 interface Doc {
   id: string;
   name: string;
-  type: "warranty" | "manual" | "receipt";
+  type: "warranty" | "manual" | "receipt" | "insurance";
+  size: string;
+  category: string;
   date: string;
 }
 
 const DOCUMENTS: Doc[] = [
-  { id: "1", name: "Samsung Fridge Warranty", type: "warranty", date: "2024-06-15" },
-  { id: "2", name: "HVAC System Manual", type: "manual", date: "2024-03-10" },
-  { id: "3", name: "Roof Replacement Receipt", type: "receipt", date: "2023-11-22" },
+  { id: "1", name: "Homeowners Insurance", type: "insurance", size: "2.4 MB", category: "Insurance", date: "2024-06-15" },
+  { id: "2", name: "Samsung Fridge Warranty", type: "warranty", size: "1.1 MB", category: "Warranty", date: "2024-06-15" },
+  { id: "3", name: "HVAC System Manual", type: "manual", size: "4.8 MB", category: "Manual", date: "2024-03-10" },
+  { id: "4", name: "Roof Replacement Receipt", type: "receipt", size: "340 KB", category: "Receipt", date: "2023-11-22" },
 ];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function warrantyVariant(status: Appliance["warranty"]) {
-  if (status === "active") return "success" as const;
-  if (status === "expiring") return "warning" as const;
-  return "danger" as const;
+const AVATAR_GRADIENTS = [
+  "from-amber-400 to-orange-500",
+  "from-purple-400 to-violet-500",
+  "from-emerald-400 to-teal-500",
+  "from-blue-400 to-indigo-500",
+  "from-rose-400 to-pink-500",
+];
+
+function getInitial(name: string | null, email: string): string {
+  if (name) return name.charAt(0).toUpperCase();
+  return email.charAt(0).toUpperCase();
 }
 
-function warrantyLabel(status: Appliance["warranty"]) {
-  if (status === "active") return "Warranty Active";
-  if (status === "expiring") return "Expiring Soon";
-  return "Warranty Expired";
+function docIcon(type: Doc["type"]) {
+  switch (type) {
+    case "insurance":
+      return { Icon: ShieldCheck, bg: "bg-[var(--color-danger-50)]", color: "text-[var(--color-danger-600)]" };
+    case "warranty":
+      return { Icon: FileText, bg: "bg-[var(--color-success-50)]", color: "text-[var(--color-success-600)]" };
+    case "manual":
+      return { Icon: BookOpen, bg: "bg-[var(--color-info-50)]", color: "text-[var(--color-info-600)]" };
+    case "receipt":
+      return { Icon: Receipt, bg: "bg-[var(--color-warning-50)]", color: "text-[var(--color-warning-600)]" };
+  }
 }
-
-function docTypeVariant(type: Doc["type"]) {
-  if (type === "warranty") return "success" as const;
-  if (type === "manual") return "info" as const;
-  return "warning" as const;
-}
-
-function Stars({ count }: { count: number }) {
-  return (
-    <span className="text-sm" aria-label={`${count} out of 5 stars`}>
-      {"★".repeat(count)}
-      {"☆".repeat(5 - count)}
-    </span>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Page                                                               */
-/* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------ */
 /*  Family Members Section (live data)                                 */
@@ -144,7 +128,7 @@ interface Invite {
   createdAt: string;
 }
 
-function FamilyMembersSection() {
+function MembersSection() {
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [showInvite, setShowInvite] = useState(false);
@@ -198,52 +182,83 @@ function FamilyMembersSection() {
     }
   };
 
+  const allEntries = [
+    ...members.map((m, i) => ({ kind: "member" as const, m, i })),
+    ...invites.map((inv, i) => ({ kind: "invite" as const, inv, i: members.length + i })),
+  ];
+
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Family Members</h2>
-        <Button variant="outline" size="sm" onClick={() => setShowInvite(true)}>
-          + Invite
-        </Button>
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[15px] font-bold">Members</h2>
+        <button
+          onClick={() => setShowInvite(true)}
+          className="text-[13px] font-semibold text-[var(--color-primary-600)]"
+        >
+          Invite &rarr;
+        </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {members.map((m) => (
-          <Card key={m.id}>
-            <CardContent className="flex items-center gap-3 p-3">
-              <Avatar src={m.avatarUrl} fallback={m.name || m.email} size="sm" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {m.name || m.email}
-                </p>
-                {m.name && (
-                  <p className="text-xs text-muted-foreground truncate">{m.email}</p>
-                )}
-              </div>
-              <Badge variant={m.role === "owner" ? "default" : "info"} size="sm">
-                {m.role === "owner" ? "Owner" : "Member"}
-              </Badge>
-            </CardContent>
-          </Card>
-        ))}
-
-        {invites.map((inv) => (
-          <Card key={inv.id} className="opacity-60">
-            <CardContent className="flex items-center gap-3 p-3">
-              <Avatar fallback={inv.invitedEmail} size="sm" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground truncate">{inv.invitedEmail}</p>
-              </div>
-              <Badge variant="warning" size="sm">Pending</Badge>
-            </CardContent>
-          </Card>
-        ))}
-
-        {members.length === 0 && invites.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">
+      <div className="bg-white rounded-2xl border border-[var(--color-neutral-200)] overflow-hidden">
+        {allEntries.length === 0 && (
+          <p className="text-sm text-neutral-400 text-center py-6">
             Invite family members to share this home&apos;s maintenance plan.
           </p>
         )}
+
+        {allEntries.map((entry, idx) => {
+          const isLast = idx === allEntries.length - 1;
+          if (entry.kind === "member") {
+            const m = entry.m;
+            const gradientIdx = entry.i % AVATAR_GRADIENTS.length;
+            return (
+              <div
+                key={m.id}
+                className={`flex items-center gap-3 px-4 py-3 ${isLast ? "" : "border-b border-[var(--color-neutral-200)]"}`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-full bg-gradient-to-br ${AVATAR_GRADIENTS[gradientIdx]} flex items-center justify-center flex-shrink-0`}
+                >
+                  <span className="text-white font-bold text-sm">
+                    {getInitial(m.name, m.email)}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">
+                    {m.name || m.email}
+                  </p>
+                  <p className="text-xs text-neutral-400">
+                    {m.role === "owner" ? "Owner" : "Member"}
+                  </p>
+                </div>
+                {entry.i === 0 && (
+                  <span className="bg-[var(--color-primary-50)] text-[var(--color-primary-600)] rounded-full px-2.5 py-0.5 text-[11px] font-bold">
+                    You
+                  </span>
+                )}
+              </div>
+            );
+          } else {
+            const inv = entry.inv;
+            return (
+              <div
+                key={inv.id}
+                className={`flex items-center gap-3 px-4 py-3 opacity-50 ${isLast ? "" : "border-b border-[var(--color-neutral-200)]"}`}
+              >
+                <div className="w-9 h-9 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
+                  <span className="text-neutral-500 font-bold text-sm">
+                    {inv.invitedEmail.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{inv.invitedEmail}</p>
+                  <p className="text-xs text-neutral-400">Pending invite</p>
+                </div>
+                <Badge variant="warning" size="sm">Pending</Badge>
+              </div>
+            );
+          }
+        })}
       </div>
 
       <Dialog
@@ -283,6 +298,10 @@ function FamilyMembersSection() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Page                                                               */
+/* ------------------------------------------------------------------ */
+
 export default function HomeProfilePage() {
   const [home] = useState(HOME);
 
@@ -292,145 +311,97 @@ export default function HomeProfilePage() {
     return acc;
   }, {});
 
+  const totalAppliances = APPLIANCES.length;
+  const activeSystems = SYSTEMS.filter((s) => s.active).length;
+
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8">
-      {/* ---- Home Header ---- */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-2xl">{home.name}</CardTitle>
-                <Badge>{home.type}</Badge>
-              </div>
-              <CardDescription>
-                {home.address} &middot; Built {home.yearBuilt}
-              </CardDescription>
-            </div>
-            <Button variant="outline" size="sm">
-              Edit
-            </Button>
+    <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-6">
+      {/* ---- Hero Card ---- */}
+      <div className="bg-gradient-to-br from-[var(--color-primary-100)] to-[var(--color-primary-200)] rounded-2xl p-6 relative overflow-hidden mb-5">
+        <span className="absolute right-[-10px] bottom-[-10px] text-[80px] opacity-15 select-none pointer-events-none">
+          {"\u{1F3E0}"}
+        </span>
+        <h1 className="text-[22px] font-extrabold text-[#78350f] tracking-tight">
+          {home.name}
+        </h1>
+        <p className="text-[13px] text-[#92400e] font-semibold mt-0.5">
+          {home.type} &middot; Built {home.yearBuilt} &middot; {home.sqft} sqft
+        </p>
+        <div className="flex gap-4 mt-4">
+          <div>
+            <p className="text-xl font-extrabold text-[#78350f]">{activeSystems}</p>
+            <p className="text-[11px] text-[#92400e] font-semibold">Systems</p>
           </div>
-        </CardHeader>
-      </Card>
+          <div>
+            <p className="text-xl font-extrabold text-[#78350f]">{totalAppliances}</p>
+            <p className="text-[11px] text-[#92400e] font-semibold">Appliances</p>
+          </div>
+          <div>
+            <p className="text-xl font-extrabold text-[#78350f]">{Object.keys(appliancesByRoom).length}</p>
+            <p className="text-[11px] text-[#92400e] font-semibold">Rooms</p>
+          </div>
+        </div>
+      </div>
 
-      {/* ---- Home Systems ---- */}
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold text-foreground">Home Systems</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {SYSTEMS.map((s) => (
-            <Card
+      {/* ---- Systems ---- */}
+      <section>
+        <h2 className="text-[15px] font-bold mb-3">Systems</h2>
+        <div className="flex flex-wrap gap-2">
+          {SYSTEMS.filter((s) => s.active).map((s) => (
+            <div
               key={s.name}
-              className={
-                s.active
-                  ? "border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/40 dark:border-[var(--color-primary-800)] dark:bg-[var(--color-primary-950)]/30"
-                  : "opacity-45"
-              }
+              className="flex items-center gap-2 bg-white border border-[var(--color-neutral-200)] rounded-xl px-3.5 py-2.5"
             >
-              <CardContent className="flex flex-col items-center gap-1 p-4 text-center">
-                <span className="text-2xl">{s.emoji}</span>
-                <span className="text-sm font-medium text-foreground">{s.name}</span>
-                <span className="text-xs text-muted-foreground">{s.subtype}</span>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- Appliances ---- */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Appliances</h2>
-          <Button variant="outline" size="sm">
-            + Add Appliance
-          </Button>
-        </div>
-
-        {Object.entries(appliancesByRoom).map(([room, items]) => (
-          <div key={room} className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium text-muted-foreground">{room}</h3>
-            <div className="flex flex-col gap-2">
-              {items.map((a) => (
-                <Card key={a.id}>
-                  <CardContent className="flex items-center justify-between p-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium text-foreground">{a.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {a.brand} &middot; {a.model}
-                      </span>
-                    </div>
-                    <Badge variant={warrantyVariant(a.warranty)} size="sm">
-                      {warrantyLabel(a.warranty)}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              ))}
+              <span className="text-[16px]">{s.emoji}</span>
+              <span className="text-[13px] font-semibold">{s.name}</span>
             </div>
-          </div>
-        ))}
-      </section>
-
-      {/* ---- Family Members ---- */}
-      <FamilyMembersSection />
-
-      {/* ---- Contractors ---- */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Contractors</h2>
-          <Button variant="outline" size="sm">
-            + Add Contractor
-          </Button>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          {CONTRACTORS.map((c) => (
-            <Card key={c.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{c.name}</span>
-                    <Badge size="sm">{c.specialty}</Badge>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{c.company}</span>
-                  <span className="text-xs text-muted-foreground">{c.phone}</span>
-                </div>
-                <div className="text-amber-500">
-                  <Stars count={c.rating} />
-                </div>
-              </CardContent>
-            </Card>
+          ))}
+          {SYSTEMS.filter((s) => !s.active).map((s) => (
+            <div
+              key={s.name}
+              className="flex items-center gap-2 bg-white border border-[var(--color-neutral-200)] rounded-xl px-3.5 py-2.5 opacity-40"
+            >
+              <span className="text-[16px]">{s.emoji}</span>
+              <span className="text-[13px] font-semibold">{s.name}</span>
+            </div>
           ))}
         </div>
       </section>
+
+      {/* ---- Members ---- */}
+      <MembersSection />
 
       {/* ---- Documents ---- */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Documents</h2>
-          <Button variant="outline" size="sm">
-            + Upload Document
-          </Button>
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[15px] font-bold">Documents</h2>
+          <button className="text-[13px] font-semibold text-[var(--color-primary-600)] flex items-center gap-1">
+            <Upload className="w-3.5 h-3.5" />
+            Upload &rarr;
+          </button>
         </div>
 
-        <div className="flex flex-col gap-2">
-          {DOCUMENTS.map((d) => (
-            <Card key={d.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">
-                    {d.type === "warranty" ? "📄" : d.type === "manual" ? "📘" : "🧾"}
-                  </span>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-foreground">{d.name}</span>
-                    <span className="text-xs text-muted-foreground">{d.date}</span>
-                  </div>
+        <div className="bg-white rounded-2xl border border-[var(--color-neutral-200)] overflow-hidden">
+          {DOCUMENTS.map((d, idx) => {
+            const { Icon, bg, color } = docIcon(d.type);
+            const isLast = idx === DOCUMENTS.length - 1;
+            return (
+              <div
+                key={d.id}
+                className={`flex items-center gap-3 px-4 py-3 ${isLast ? "" : "border-b border-[var(--color-neutral-200)]"}`}
+              >
+                <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
+                  <Icon className={`w-5 h-5 ${color}`} />
                 </div>
-                <Badge variant={docTypeVariant(d.type)} size="sm">
-                  {d.type.charAt(0).toUpperCase() + d.type.slice(1)}
-                </Badge>
-              </CardContent>
-            </Card>
-          ))}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{d.name}</p>
+                  <p className="text-xs text-neutral-400">
+                    {d.category} &middot; {d.size}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>

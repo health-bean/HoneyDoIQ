@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, ChevronRight, Check, SkipForward, Clock, Home } from "lucide-react";
 import {
   Button,
-  Card,
-  CardContent,
   Badge,
   Input,
   Select,
@@ -141,11 +140,11 @@ const priorityLabels: Record<string, string> = {
   cosmetic: "Cosmetic",
 };
 
-const priorityDot: Record<string, string> = {
-  safety: "bg-red-500",
-  prevent_damage: "bg-orange-500",
-  efficiency: "bg-amber-400",
-  cosmetic: "bg-green-400",
+const priorityStripColor: Record<string, string> = {
+  safety: "bg-[#ef4444]",
+  prevent_damage: "bg-[#f59e0b]",
+  efficiency: "bg-[#f59e0b]",
+  cosmetic: "bg-[#e7e5e4]",
 };
 
 const filterOptions: { key: FilterKey; label: string }[] = [
@@ -155,58 +154,6 @@ const filterOptions: { key: FilterKey; label: string }[] = [
   { key: "upcoming", label: "Upcoming" },
   { key: "completed", label: "Completed" },
 ];
-
-// ---------------------------------------------------------------------------
-// Inline SVG Icons
-// ---------------------------------------------------------------------------
-
-function FilterIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
-function SkipIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-    </svg>
-  );
-}
-
-function SnoozeIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
-
-function HomeIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-    </svg>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -389,109 +336,74 @@ export default function TasksPage() {
   // Render helpers
   // -------------------------------------------------------------------------
 
-  function renderTaskCard(task: Task, accentClass: string) {
+  function renderTaskRow(task: Task, group: StatusGroup | "completed") {
     const due = relativeDueLabel(task.nextDueDate, today);
     const priLabel = priorityLabels[task.priority] || task.priority;
-    const priDot = priorityDot[task.priority] || "bg-gray-400";
+    const stripColor =
+      group === "overdue"
+        ? "bg-[#ef4444]"
+        : group === "due_soon"
+          ? "bg-[#f59e0b]"
+          : "bg-[#e7e5e4]";
     const isActioning = actionLoading === task.id;
+    const isUpcoming = group === "upcoming";
 
     return (
-      <Card
+      <button
         key={task.id}
-        className={`border-l-4 ${accentClass} transition-all duration-300 ${
-          isActioning ? "opacity-30 scale-95" : "opacity-100"
-        } ${!task.isActive ? "opacity-60" : ""}`}
+        onClick={() => setSelectedTask(task)}
+        className={`w-full bg-white dark:bg-neutral-900 rounded-2xl border border-[var(--color-neutral-200)] dark:border-neutral-800 p-3.5 flex items-center gap-3 text-left transition-all duration-300 ${
+          isActioning ? "opacity-30 scale-95" : ""
+        } ${isUpcoming ? "opacity-60" : ""} ${!task.isActive ? "opacity-60" : ""}`}
       >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            {/* Left content */}
-            <div className="flex-1 min-w-0">
-              <button
-                className="text-left font-semibold text-foreground hover:text-primary transition-colors text-base leading-snug"
-                onClick={() => setSelectedTask(task)}
-              >
-                {task.name}
-              </button>
+        {/* Priority strip */}
+        <div className={`w-1 h-8 rounded-full shrink-0 ${stripColor}`} />
 
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge
-                  variant={categoryBadgeVariant[task.category] || "default"}
-                  size="sm"
-                >
-                  {categoryLabels[task.category] || task.category}
-                </Badge>
-                <span className={`text-xs font-medium ${due.color}`}>{due.text}</span>
-              </div>
+        {/* Checkbox circle */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (task.isActive) completeTask(task.id);
+          }}
+          disabled={isActioning || !task.isActive}
+          className="w-[22px] h-[22px] rounded-full border-2 border-neutral-300 dark:border-neutral-600 shrink-0 flex items-center justify-center hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors disabled:opacity-50"
+          title="Complete task"
+        >
+          {!task.isActive && <Check className="w-3 h-3 text-neutral-400" />}
+        </button>
 
-              <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full ${priDot}`}
-                    title={priLabel}
-                  />
-                  {priLabel}
-                </span>
-                <span>
-                  Every {task.frequencyValue} {task.frequencyUnit}
-                </span>
-              </div>
-            </div>
+        {/* Task info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[var(--color-neutral-900)] dark:text-neutral-100 truncate">
+            {task.name}
+          </p>
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 truncate">
+            {categoryLabels[task.category] || task.category} &middot; {priLabel} &middot;{" "}
+            <span className={due.color}>{due.text}</span>
+          </p>
+        </div>
 
-            {/* Action buttons */}
-            {task.isActive && (
-              <div className="flex flex-col gap-1.5 shrink-0">
-                <button
-                  onClick={() => completeTask(task.id)}
-                  disabled={isActioning}
-                  className="flex items-center gap-1 rounded-md bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900 disabled:opacity-50"
-                  title="Complete"
-                >
-                  <CheckIcon className="h-3.5 w-3.5" />
-                  Done
-                </button>
-                <button
-                  onClick={() => skipTask(task.id)}
-                  disabled={isActioning}
-                  className="flex items-center gap-1 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 disabled:opacity-50"
-                  title="Skip"
-                >
-                  <SkipIcon className="h-3.5 w-3.5" />
-                  Skip
-                </button>
-                <button
-                  onClick={() => snoozeTask(task.id)}
-                  disabled={isActioning}
-                  className="flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900 disabled:opacity-50"
-                  title="Snooze 7 days"
-                >
-                  <SnoozeIcon className="h-3.5 w-3.5" />
-                  Snooze
-                </button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        {/* Chevron */}
+        <ChevronRight className="w-4 h-4 text-neutral-300 dark:text-neutral-600 shrink-0" />
+      </button>
     );
   }
 
-  function renderSection(
+  function renderGroup(
     title: string,
     items: Task[],
-    accentClass: string,
+    group: StatusGroup | "completed",
     titleColor: string
   ) {
     if (items.length === 0) return null;
     return (
-      <section className="space-y-3">
-        <h2 className={`text-sm font-semibold uppercase tracking-wider ${titleColor}`}>
+      <section className="mb-5">
+        <h2 className={`text-xs font-bold uppercase tracking-widest mb-2.5 ${titleColor}`}>
           {title}
-          <span className="ml-2 text-xs font-normal text-muted-foreground">
-            ({items.length})
-          </span>
+          <span className="ml-1.5 text-[11px] font-normal opacity-60">({items.length})</span>
         </h2>
-        <div className="space-y-3">
-          {items.map((task) => renderTaskCard(task, accentClass))}
+        <div className="flex flex-col gap-2">
+          {items.map((task) => renderTaskRow(task, group))}
         </div>
       </section>
     );
@@ -504,13 +416,15 @@ export default function TasksPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl px-4 pb-24 pt-6">
+        {/* Header skeleton */}
         <div className="flex items-center justify-between mb-6">
-          <div className="h-8 w-24 animate-pulse rounded bg-muted" />
-          <div className="h-9 w-28 animate-pulse rounded-lg bg-muted" />
+          <div className="h-7 w-20 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+          <div className="h-9 w-9 animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-800" />
         </div>
+        {/* Filter pills skeleton */}
         <div className="flex gap-2 mb-6">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-8 w-20 animate-pulse rounded-full bg-muted" />
+            <div key={i} className="h-8 w-20 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />
           ))}
         </div>
         <div className="space-y-3">
@@ -548,10 +462,18 @@ export default function TasksPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 pb-24 pt-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Tasks</h1>
+          <h1 className="text-[22px] font-extrabold tracking-tight text-[var(--color-neutral-900)] dark:text-neutral-100">
+            Tasks
+          </h1>
+          <button
+            onClick={() => setAddOpen(true)}
+            className="h-9 w-9 flex items-center justify-center bg-[#1c1917] dark:bg-white rounded-xl transition-colors"
+          >
+            <Plus className="w-[18px] h-[18px] text-white dark:text-black" />
+          </button>
         </div>
         <EmptyState
-          icon={<HomeIcon className="h-10 w-10" />}
+          icon={<Home className="h-10 w-10" />}
           title="No tasks yet"
           description="Complete onboarding to get personalized maintenance tasks for your home."
           action={{
@@ -560,6 +482,97 @@ export default function TasksPage() {
             variant: "primary",
           }}
         />
+
+        {/* Add Task Dialog — keep available even in empty state */}
+        <Dialog open={addOpen} onClose={() => setAddOpen(false)} title="Add Task" size="md">
+          {renderAddTaskForm()}
+        </Dialog>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Add Task form (shared)
+  // -------------------------------------------------------------------------
+
+  function renderAddTaskForm() {
+    return (
+      <div className="space-y-4 mt-2">
+        <Input
+          label="Task Name"
+          placeholder="e.g. Clean dryer vent"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          required
+        />
+
+        <Select
+          label="Category"
+          value={newCategory}
+          onChange={(e) => setNewCategory(e.target.value)}
+          options={Object.entries(categoryLabels).map(([value, label]) => ({
+            value,
+            label,
+          }))}
+        />
+
+        <Select
+          label="Priority"
+          value={newPriority}
+          onChange={(e) => setNewPriority(e.target.value)}
+          options={[
+            { value: "safety", label: "Critical" },
+            { value: "prevent_damage", label: "Preventive" },
+            { value: "efficiency", label: "Efficiency" },
+            { value: "cosmetic", label: "Cosmetic" },
+          ]}
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Frequency"
+            type="number"
+            min={1}
+            placeholder="1"
+            value={String(newFreqValue)}
+            onChange={(e) => setNewFreqValue(Math.max(1, parseInt(e.target.value) || 1))}
+          />
+          <Select
+            label="Unit"
+            value={newFreqUnit}
+            onChange={(e) => setNewFreqUnit(e.target.value)}
+            options={[
+              { value: "days", label: "Days" },
+              { value: "weeks", label: "Weeks" },
+              { value: "months", label: "Months" },
+              { value: "years", label: "Years" },
+            ]}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground">Notes</label>
+          <textarea
+            className="flex min-h-[80px] w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-[var(--color-neutral-900)]"
+            placeholder="Any additional notes..."
+            value={newNotes}
+            onChange={(e) => setNewNotes(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <Button
+            variant="primary"
+            className="flex-1"
+            onClick={handleAddTask}
+            disabled={!newName.trim() || saving}
+          >
+            {saving ? "Saving..." : "Save Task"}
+          </Button>
+          <Button variant="outline" className="flex-1" onClick={() => setAddOpen(false)}>
+            Cancel
+          </Button>
+        </div>
       </div>
     );
   }
@@ -572,16 +585,15 @@ export default function TasksPage() {
     <div className="mx-auto max-w-2xl px-4 pb-24 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Tasks</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-            <FilterIcon className="h-5 w-5" />
-          </Button>
-          <Button variant="primary" size="sm" onClick={() => setAddOpen(true)}>
-            <PlusIcon className="h-4 w-4" />
-            Add Task
-          </Button>
-        </div>
+        <h1 className="text-[22px] font-extrabold tracking-tight text-[var(--color-neutral-900)] dark:text-neutral-100">
+          Tasks
+        </h1>
+        <button
+          onClick={() => setAddOpen(true)}
+          className="h-9 w-9 flex items-center justify-center bg-[#1c1917] dark:bg-white rounded-xl transition-colors"
+        >
+          <Plus className="w-[18px] h-[18px] text-white dark:text-black" />
+        </button>
       </div>
 
       {/* Filter pills */}
@@ -594,16 +606,20 @@ export default function TasksPage() {
               <button
                 key={opt.key}
                 onClick={() => setFilter(opt.key)}
-                className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${
                   isActive
-                    ? "bg-primary text-white shadow-sm"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    ? "bg-[#1c1917] dark:bg-white text-white dark:text-black font-semibold"
+                    : "bg-[var(--color-neutral-100)] dark:bg-neutral-800 text-[var(--color-neutral-500)] dark:text-neutral-400 font-medium"
                 }`}
               >
                 {opt.label}
                 {count > 0 && (
                   <span
-                    className={`ml-1.5 text-xs ${isActive ? "text-white/80" : "text-muted-foreground"}`}
+                    className={`ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full px-1 text-[11px] font-semibold ${
+                      isActive
+                        ? "bg-white/20 text-white dark:bg-black/20 dark:text-black"
+                        : "bg-[var(--color-neutral-200)] dark:bg-neutral-700 text-[var(--color-neutral-500)] dark:text-neutral-400"
+                    }`}
                   >
                     {count}
                   </span>
@@ -614,66 +630,46 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Task sections */}
-      <div className="space-y-8">
+      {/* Task groups */}
+      <div>
         {(filter === "all" || filter === "overdue") &&
-          renderSection(
-            "Overdue",
-            grouped.overdue,
-            "border-l-red-500",
-            "text-red-600 dark:text-red-400"
-          )}
+          renderGroup("Overdue", grouped.overdue, "overdue", "text-red-600 dark:text-red-400")}
 
         {(filter === "all" || filter === "due_soon") &&
-          renderSection(
-            "Due This Week",
-            grouped.due_soon,
-            "border-l-amber-400",
-            "text-amber-600 dark:text-amber-400"
-          )}
+          renderGroup("Due this week", grouped.due_soon, "due_soon", "text-amber-500")}
 
         {(filter === "all" || filter === "upcoming") &&
-          renderSection(
-            "Upcoming",
-            grouped.upcoming,
-            "border-l-gray-300 dark:border-l-neutral-600",
-            "text-muted-foreground"
-          )}
+          renderGroup("Upcoming", grouped.upcoming, "upcoming", "text-neutral-400")}
 
         {(filter === "all" || filter === "completed") &&
           completedTasks.length > 0 &&
-          renderSection(
-            "Completed",
-            completedTasks,
-            "border-l-green-300 dark:border-l-green-800",
-            "text-green-600 dark:text-green-400"
-          )}
+          renderGroup("Completed", completedTasks, "completed", "text-green-600 dark:text-green-400")}
 
-        {/* Empty state for filtered views */}
+        {/* Empty states for filtered views */}
         {filter === "overdue" && grouped.overdue.length === 0 && (
           <EmptyState
-            icon={<CheckIcon className="h-8 w-8" />}
+            icon={<Check className="h-8 w-8" />}
             title="No overdue tasks"
             description="You're all caught up! No tasks are past due."
           />
         )}
         {filter === "due_soon" && grouped.due_soon.length === 0 && (
           <EmptyState
-            icon={<CheckIcon className="h-8 w-8" />}
+            icon={<Check className="h-8 w-8" />}
             title="Nothing due soon"
             description="No tasks are due in the next 7 days."
           />
         )}
         {filter === "upcoming" && grouped.upcoming.length === 0 && (
           <EmptyState
-            icon={<CheckIcon className="h-8 w-8" />}
+            icon={<Check className="h-8 w-8" />}
             title="No upcoming tasks"
             description="No tasks scheduled beyond this week."
           />
         )}
         {filter === "completed" && completedTasks.length === 0 && (
           <EmptyState
-            icon={<CheckIcon className="h-8 w-8" />}
+            icon={<Check className="h-8 w-8" />}
             title="No completed tasks"
             description="You haven't completed any tasks yet. Get started!"
           />
@@ -775,7 +771,7 @@ export default function TasksPage() {
                     setSelectedTask(null);
                   }}
                 >
-                  <CheckIcon className="h-4 w-4" />
+                  <Check className="h-4 w-4" />
                   Complete
                 </Button>
                 <Button
@@ -786,7 +782,7 @@ export default function TasksPage() {
                     setSelectedTask(null);
                   }}
                 >
-                  <SkipIcon className="h-4 w-4" />
+                  <SkipForward className="h-4 w-4" />
                   Skip
                 </Button>
                 <Button
@@ -797,7 +793,7 @@ export default function TasksPage() {
                     setSelectedTask(null);
                   }}
                 >
-                  <SnoozeIcon className="h-4 w-4" />
+                  <Clock className="h-4 w-4" />
                   Snooze
                 </Button>
               </div>
@@ -810,83 +806,7 @@ export default function TasksPage() {
       {/* Add Task Dialog                                                      */}
       {/* ------------------------------------------------------------------- */}
       <Dialog open={addOpen} onClose={() => setAddOpen(false)} title="Add Task" size="md">
-        <div className="space-y-4 mt-2">
-          <Input
-            label="Task Name"
-            placeholder="e.g. Clean dryer vent"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            required
-          />
-
-          <Select
-            label="Category"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            options={Object.entries(categoryLabels).map(([value, label]) => ({
-              value,
-              label,
-            }))}
-          />
-
-          <Select
-            label="Priority"
-            value={newPriority}
-            onChange={(e) => setNewPriority(e.target.value)}
-            options={[
-              { value: "safety", label: "Critical" },
-              { value: "prevent_damage", label: "Preventive" },
-              { value: "efficiency", label: "Efficiency" },
-              { value: "cosmetic", label: "Cosmetic" },
-            ]}
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Frequency"
-              type="number"
-              min={1}
-              placeholder="1"
-              value={String(newFreqValue)}
-              onChange={(e) => setNewFreqValue(Math.max(1, parseInt(e.target.value) || 1))}
-            />
-            <Select
-              label="Unit"
-              value={newFreqUnit}
-              onChange={(e) => setNewFreqUnit(e.target.value)}
-              options={[
-                { value: "days", label: "Days" },
-                { value: "weeks", label: "Weeks" },
-                { value: "months", label: "Months" },
-                { value: "years", label: "Years" },
-              ]}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">Notes</label>
-            <textarea
-              className="flex min-h-[80px] w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-[var(--color-neutral-900)]"
-              placeholder="Any additional notes..."
-              value={newNotes}
-              onChange={(e) => setNewNotes(e.target.value)}
-            />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="primary"
-              className="flex-1"
-              onClick={handleAddTask}
-              disabled={!newName.trim() || saving}
-            >
-              {saving ? "Saving..." : "Save Task"}
-            </Button>
-            <Button variant="outline" className="flex-1" onClick={() => setAddOpen(false)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+        {renderAddTaskForm()}
       </Dialog>
     </div>
   );
