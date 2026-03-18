@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { type ZodSchema } from "zod";
+import * as Sentry from "@sentry/nextjs";
 import { getAppUser } from "@/lib/auth/get-app-user";
 import { rateLimit, RATE_LIMITS } from "./rate-limit";
 
@@ -75,7 +76,7 @@ export function apiHandler(handler: HandlerFn, options?: ApiHandlerOptions) {
         );
       }
 
-      // Log unexpected errors (replace with Sentry/structured logging in production)
+      Sentry.captureException(error);
       console.error("[API Error]", error);
 
       return NextResponse.json(
