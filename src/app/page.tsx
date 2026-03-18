@@ -1,9 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const handleGoogleSignIn = async () => {
@@ -118,5 +119,13 @@ export default function Home() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
   );
 }

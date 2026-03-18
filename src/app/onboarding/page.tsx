@@ -3,14 +3,11 @@
 import { useState, useCallback, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Button,
-  Card,
-  CardContent,
-  Input,
-  Select,
-  Progress,
-  Badge,
-} from "@/components/ui";
+  Check,
+  ChevronRight,
+  Home,
+  Loader2,
+} from "lucide-react";
 import { getApplicableTemplates } from "@/lib/tasks/scheduling";
 import type {
   TaskTemplate,
@@ -49,20 +46,20 @@ interface TaskSetup {
 // Constants
 // ---------------------------------------------------------------------------
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4; // Welcome is step 0 (not counted), steps 1-4
 
 const HOME_TYPES = [
-  { value: "single_family", label: "Single Family" },
-  { value: "townhouse", label: "Townhouse" },
-  { value: "condo", label: "Condo" },
-  { value: "apartment", label: "Apartment" },
-  { value: "multi_family", label: "Multi-Family" },
-  { value: "mobile_home", label: "Mobile Home" },
-  { value: "vacation_home", label: "Vacation Home" },
-  { value: "rental_property", label: "Rental Property" },
-  { value: "apartment_building", label: "Apartment Building" },
-  { value: "office_commercial", label: "Office / Commercial" },
-  { value: "warehouse_industrial", label: "Warehouse / Industrial" },
+  { value: "single_family", label: "Single Family", icon: "🏡", desc: "Detached house" },
+  { value: "townhouse", label: "Townhouse", icon: "🏘️", desc: "Row or attached home" },
+  { value: "condo", label: "Condo", icon: "🏢", desc: "Unit in a building" },
+  { value: "apartment", label: "Apartment", icon: "🏬", desc: "Rental unit" },
+  { value: "multi_family", label: "Multi-Family", icon: "🏠", desc: "Duplex or triplex" },
+  { value: "mobile_home", label: "Mobile Home", icon: "🏕️", desc: "Manufactured home" },
+  { value: "vacation_home", label: "Vacation Home", icon: "🌴", desc: "Seasonal property" },
+  { value: "rental_property", label: "Rental Property", icon: "🔑", desc: "Investment property" },
+  { value: "apartment_building", label: "Apartment Building", icon: "🏗️", desc: "Multi-unit building" },
+  { value: "office_commercial", label: "Office / Commercial", icon: "🏛️", desc: "Business space" },
+  { value: "warehouse_industrial", label: "Warehouse / Industrial", icon: "🏭", desc: "Industrial space" },
 ];
 
 const OWNER_ROLES = [
@@ -152,11 +149,12 @@ interface SystemDef {
   label: string;
   hint: string;
   multiSelect: boolean;
+  iconBg: string;
   subtypes?: { value: string; label: string }[];
 }
 
 const SYSTEMS: SystemDef[] = [
-  { key: "hvac", mappedType: "hvac", icon: "🌡️", label: "HVAC", hint: "Heating & cooling reminders", multiSelect: true,
+  { key: "hvac", mappedType: "hvac", icon: "🌡️", label: "HVAC", hint: "Heating & cooling reminders", iconBg: "bg-[var(--color-danger-50)]", multiSelect: true,
     subtypes: [
       { value: "forced-air", label: "Forced Air" },
       { value: "radiant", label: "Radiant" },
@@ -164,37 +162,37 @@ const SYSTEMS: SystemDef[] = [
       { value: "window-units", label: "Window Units" },
     ],
   },
-  { key: "plumbing", mappedType: "plumbing", icon: "🚿", label: "Plumbing", hint: "Pipes, drains & water heater", multiSelect: false },
-  { key: "electrical", mappedType: "electrical", icon: "⚡", label: "Electrical", hint: "Panel, outlets & wiring", multiSelect: false },
-  { key: "roofing", mappedType: "roofing", icon: "🏠", label: "Roofing", hint: "Roof & gutter maintenance", multiSelect: true,
+  { key: "plumbing", mappedType: "plumbing", icon: "🚿", label: "Plumbing", hint: "Pipes, drains & water heater", iconBg: "bg-[var(--color-info-50)]", multiSelect: false },
+  { key: "electrical", mappedType: "electrical", icon: "⚡", label: "Electrical", hint: "Panel, outlets & wiring", iconBg: "bg-[var(--color-warning-50)]", multiSelect: false },
+  { key: "roofing", mappedType: "roofing", icon: "🏠", label: "Roofing", hint: "Roof & gutter maintenance", iconBg: "bg-[var(--color-primary-50)]", multiSelect: true,
     subtypes: [
       { value: "asphalt-shingle", label: "Asphalt Shingle" },
       { value: "metal", label: "Metal" },
       { value: "tile", label: "Tile" },
     ],
   },
-  { key: "foundation", mappedType: "foundation", icon: "🧱", label: "Foundation", hint: "Structural & moisture checks", multiSelect: true,
+  { key: "foundation", mappedType: "foundation", icon: "🧱", label: "Foundation", hint: "Structural & moisture checks", iconBg: "bg-[var(--color-neutral-100)]", multiSelect: true,
     subtypes: [
       { value: "slab", label: "Slab" },
       { value: "crawlspace", label: "Crawlspace" },
       { value: "basement", label: "Basement" },
     ],
   },
-  { key: "water-source", mappedType: "water_source", icon: "💧", label: "Water Source", hint: "Water quality & supply", multiSelect: false,
+  { key: "water-source", mappedType: "water_source", icon: "💧", label: "Water Source", hint: "Water quality & supply", iconBg: "bg-[var(--color-info-50)]", multiSelect: false,
     subtypes: [
       { value: "municipal", label: "Municipal" },
       { value: "well", label: "Well" },
     ],
   },
-  { key: "sewage", mappedType: "sewage", icon: "🏗️", label: "Sewage", hint: "Sewer or septic maintenance", multiSelect: false,
+  { key: "sewage", mappedType: "sewage", icon: "🏗️", label: "Sewage", hint: "Sewer or septic maintenance", iconBg: "bg-[var(--color-neutral-100)]", multiSelect: false,
     subtypes: [
       { value: "sewer", label: "Sewer" },
       { value: "septic", label: "Septic" },
     ],
   },
-  { key: "irrigation", mappedType: "irrigation", icon: "🌱", label: "Irrigation", hint: "Sprinkler system care", multiSelect: false },
-  { key: "pool", mappedType: "pool", icon: "🏊", label: "Pool", hint: "Pool chemicals & equipment", multiSelect: false },
-  { key: "security", mappedType: "security", icon: "🔒", label: "Security", hint: "Alarm & camera system", multiSelect: false },
+  { key: "irrigation", mappedType: "irrigation", icon: "🌱", label: "Irrigation", hint: "Sprinkler system care", iconBg: "bg-[var(--color-success-50)]", multiSelect: false },
+  { key: "pool", mappedType: "pool", icon: "🏊", label: "Pool", hint: "Pool chemicals & equipment", iconBg: "bg-[var(--color-info-50)]", multiSelect: false },
+  { key: "security", mappedType: "security", icon: "🔒", label: "Security", hint: "Alarm & camera system", iconBg: "bg-[var(--color-warning-50)]", multiSelect: false },
 ];
 
 interface ApplianceDef {
@@ -202,24 +200,25 @@ interface ApplianceDef {
   mappedCategory: ApplianceCategory;
   icon: string;
   label: string;
+  iconBg: string;
 }
 
 const APPLIANCES: ApplianceDef[] = [
-  { key: "refrigerator", mappedCategory: "refrigerator", icon: "🧊", label: "Refrigerator" },
-  { key: "dishwasher", mappedCategory: "dishwasher", icon: "🍽️", label: "Dishwasher" },
-  { key: "washing-machine", mappedCategory: "washing_machine", icon: "👕", label: "Washing Machine" },
-  { key: "dryer", mappedCategory: "dryer", icon: "🌀", label: "Dryer" },
-  { key: "oven-range", mappedCategory: "oven_range", icon: "🍳", label: "Oven / Range" },
-  { key: "microwave", mappedCategory: "microwave", icon: "📡", label: "Microwave" },
-  { key: "garbage-disposal", mappedCategory: "garbage_disposal", icon: "♻️", label: "Garbage Disposal" },
-  { key: "water-heater", mappedCategory: "water_heater", icon: "🔥", label: "Water Heater" },
-  { key: "furnace", mappedCategory: "furnace", icon: "🌬️", label: "Furnace" },
-  { key: "ac-unit", mappedCategory: "ac_unit", icon: "❄️", label: "AC Unit" },
-  { key: "water-softener", mappedCategory: "water_softener", icon: "💦", label: "Water Softener" },
-  { key: "garage-door", mappedCategory: "garage_door", icon: "🚗", label: "Garage Door" },
-  { key: "sump-pump", mappedCategory: "sump_pump", icon: "🔧", label: "Sump Pump" },
-  { key: "generator", mappedCategory: "generator", icon: "⚙️", label: "Generator" },
-  { key: "hot-tub", mappedCategory: "hot_tub", icon: "♨️", label: "Hot Tub" },
+  { key: "refrigerator", mappedCategory: "refrigerator", icon: "🧊", label: "Refrigerator", iconBg: "bg-[var(--color-info-50)]" },
+  { key: "dishwasher", mappedCategory: "dishwasher", icon: "🍽️", label: "Dishwasher", iconBg: "bg-[var(--color-primary-50)]" },
+  { key: "washing-machine", mappedCategory: "washing_machine", icon: "👕", label: "Washing Machine", iconBg: "bg-[var(--color-info-50)]" },
+  { key: "dryer", mappedCategory: "dryer", icon: "🌀", label: "Dryer", iconBg: "bg-[var(--color-warning-50)]" },
+  { key: "oven-range", mappedCategory: "oven_range", icon: "🍳", label: "Oven / Range", iconBg: "bg-[var(--color-danger-50)]" },
+  { key: "microwave", mappedCategory: "microwave", icon: "📡", label: "Microwave", iconBg: "bg-[var(--color-neutral-100)]" },
+  { key: "garbage-disposal", mappedCategory: "garbage_disposal", icon: "♻️", label: "Garbage Disposal", iconBg: "bg-[var(--color-success-50)]" },
+  { key: "water-heater", mappedCategory: "water_heater", icon: "🔥", label: "Water Heater", iconBg: "bg-[var(--color-danger-50)]" },
+  { key: "furnace", mappedCategory: "furnace", icon: "🌬️", label: "Furnace", iconBg: "bg-[var(--color-warning-50)]" },
+  { key: "ac-unit", mappedCategory: "ac_unit", icon: "❄️", label: "AC Unit", iconBg: "bg-[var(--color-info-50)]" },
+  { key: "water-softener", mappedCategory: "water_softener", icon: "💦", label: "Water Softener", iconBg: "bg-[var(--color-info-50)]" },
+  { key: "garage-door", mappedCategory: "garage_door", icon: "🚗", label: "Garage Door", iconBg: "bg-[var(--color-neutral-100)]" },
+  { key: "sump-pump", mappedCategory: "sump_pump", icon: "🔧", label: "Sump Pump", iconBg: "bg-[var(--color-neutral-100)]" },
+  { key: "generator", mappedCategory: "generator", icon: "⚙️", label: "Generator", iconBg: "bg-[var(--color-warning-50)]" },
+  { key: "hot-tub", mappedCategory: "hot_tub", icon: "♨️", label: "Hot Tub", iconBg: "bg-[var(--color-danger-50)]" },
 ];
 
 const CATEGORY_LABELS: Record<TaskCategory, string> = {
@@ -315,27 +314,234 @@ function groupTemplatesByCategory(templates: TaskTemplate[]): Map<TaskCategory, 
 }
 
 // ---------------------------------------------------------------------------
+// Shared UI Components
+// ---------------------------------------------------------------------------
+
+function ProgressBar({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) {
+  return (
+    <div className="flex gap-1">
+      {Array.from({ length: totalSteps }, (_, i) => {
+        const stepIndex = i + 1;
+        let bg = "bg-[var(--color-neutral-200)]";
+        if (stepIndex < currentStep) bg = "bg-[var(--color-primary-500)]";
+        else if (stepIndex === currentStep) bg = "bg-[var(--color-primary-200)]";
+        return <div key={i} className={`h-1 flex-1 rounded-full ${bg}`} />;
+      })}
+    </div>
+  );
+}
+
+function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div>
+      <h2 className="text-[22px] font-extrabold text-[var(--color-neutral-900)] tracking-tight mb-1.5">
+        {title}
+      </h2>
+      <p className="text-sm text-[var(--color-neutral-400)] mb-6 leading-relaxed">
+        {subtitle}
+      </p>
+    </div>
+  );
+}
+
+function ContinueButton({
+  onClick,
+  disabled = false,
+  loading = false,
+  children = "Continue",
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={`w-full h-[50px] bg-[#1c1917] text-white rounded-xl font-bold text-[15px] mt-6 transition-all flex items-center justify-center gap-2 ${
+        disabled || loading ? "opacity-50 cursor-not-allowed" : "hover:bg-[#292524] active:scale-[0.98]"
+      }`}
+    >
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {children}
+    </button>
+  );
+}
+
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-sm font-semibold text-[var(--color-neutral-400)] text-center mt-3 w-full transition-colors hover:text-[var(--color-neutral-600)]"
+    >
+      Back
+    </button>
+  );
+}
+
+function StepIndicator({ current, total }: { current: number; total: number }) {
+  return (
+    <p className="text-center text-xs text-[var(--color-neutral-400)] font-medium mt-3">
+      Step {current} of {total}
+    </p>
+  );
+}
+
+function SelectionCheckmark({ selected }: { selected: boolean }) {
+  return (
+    <div
+      className={`w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 transition-all ${
+        selected
+          ? "bg-[var(--color-primary-500)]"
+          : "border-2 border-[var(--color-neutral-300)]"
+      }`}
+    >
+      {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+    </div>
+  );
+}
+
+function SelectionCard({
+  selected,
+  onClick,
+  icon,
+  iconBg = "bg-[var(--color-primary-50)]",
+  label,
+  description,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  iconBg?: string;
+  label: string;
+  description?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-3 p-4 bg-white rounded-2xl border-2 cursor-pointer transition-all w-full text-left ${
+        selected
+          ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
+          : "border-[var(--color-neutral-200)] hover:border-[var(--color-neutral-300)]"
+      }`}
+    >
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${iconBg}`}>
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-semibold text-[var(--color-neutral-900)] block">{label}</span>
+        {description && (
+          <span className="text-xs text-[var(--color-neutral-400)]">{description}</span>
+        )}
+        {children}
+      </div>
+      <SelectionCheckmark selected={selected} />
+    </button>
+  );
+}
+
+function FormLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="text-sm font-medium text-[var(--color-neutral-700)] mb-1.5 block">
+      {children}
+    </label>
+  );
+}
+
+function FormInput({
+  label,
+  type = "text",
+  placeholder,
+  value,
+  onChange,
+  maxLength,
+}: {
+  label: string;
+  type?: string;
+  placeholder?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  maxLength?: number;
+}) {
+  return (
+    <div>
+      <FormLabel>{label}</FormLabel>
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        maxLength={maxLength}
+        className="h-11 w-full rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 text-sm font-medium focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-100)] outline-none transition-all dark:bg-[var(--color-neutral-800)] dark:border-[var(--color-neutral-700)]"
+      />
+    </div>
+  );
+}
+
+function FormSelect({
+  label,
+  placeholder,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  placeholder?: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+}) {
+  return (
+    <div>
+      <FormLabel>{label}</FormLabel>
+      <select
+        value={value}
+        onChange={onChange}
+        className="h-11 w-full rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 text-sm font-medium focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-100)] outline-none transition-all appearance-none dark:bg-[var(--color-neutral-800)] dark:border-[var(--color-neutral-700)]"
+      >
+        {placeholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Step 1: Welcome
 // ---------------------------------------------------------------------------
 
 function StepWelcome({ onNext }: { onNext: () => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 text-center">
-      <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-[var(--color-primary-100)] text-5xl shadow-md dark:bg-[var(--color-primary-900)]/40">
-        🏠
+    <div className="flex flex-1 flex-col items-center justify-center gap-8 px-5 text-center">
+      <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-[var(--color-primary-50)] text-5xl">
+        <Home className="h-12 w-12 text-[var(--color-primary-500)]" />
       </div>
       <div className="flex flex-col gap-3">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="text-[22px] font-extrabold text-[var(--color-neutral-900)] tracking-tight">
           Let&apos;s set up your home
         </h1>
-        <p className="mx-auto max-w-sm text-base text-muted-foreground">
+        <p className="mx-auto max-w-sm text-sm text-[var(--color-neutral-400)] leading-relaxed">
           Answer a few quick questions and we&apos;ll build a personalized maintenance
           plan you can customize.
         </p>
       </div>
-      <Button size="lg" className="w-full max-w-xs" onClick={onNext}>
+      <ContinueButton onClick={onNext}>
         Get Started
-      </Button>
+      </ContinueButton>
     </div>
   );
 }
@@ -349,11 +555,13 @@ function StepBasicsAndLocation({
   onChange,
   onNext,
   onBack,
+  currentStep,
 }: {
   data: FormData;
   onChange: (d: Partial<FormData>) => void;
   onNext: () => void;
   onBack: () => void;
+  currentStep: number;
 }) {
   const climateZone = data.state ? CLIMATE_ZONES[data.state] ?? "" : "";
   const canProceed =
@@ -364,53 +572,68 @@ function StepBasicsAndLocation({
     data.state !== "";
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">About Your Home</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Basic info helps us tailor maintenance to your home and climate.
-        </p>
-      </div>
+    <>
+      <StepTitle
+        title="About Your Home"
+        subtitle="Basic info helps us tailor maintenance to your home and climate."
+      />
 
-      <div className="flex flex-col gap-4">
-        <Input
+      <div className="flex flex-col gap-5">
+        <FormInput
           label="Home Name"
           placeholder='e.g., "Main House" or "Lake Cabin"'
           value={data.name}
           onChange={(e) => onChange({ name: e.target.value })}
         />
-        <Select
-          label="Property Type"
-          placeholder="Select"
-          options={HOME_TYPES}
-          value={data.type}
-          onChange={(e) => onChange({ type: e.target.value })}
-        />
-        <div className="flex gap-2">
-          {OWNER_ROLES.map((role) => (
-            <button
-              key={role.value}
-              type="button"
-              onClick={() => onChange({ ownerRole: role.value })}
-              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                data.ownerRole === role.value
-                  ? "border-primary bg-[var(--color-primary-50)] text-primary dark:bg-[var(--color-primary-900)]/20"
-                  : "border-border text-muted-foreground hover:border-muted-foreground/30"
-              }`}
-            >
-              {role.label}
-            </button>
-          ))}
+
+        {/* Property Type as selection cards */}
+        <div>
+          <FormLabel>Property Type</FormLabel>
+          <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto">
+            {HOME_TYPES.map((ht) => (
+              <SelectionCard
+                key={ht.value}
+                selected={data.type === ht.value}
+                onClick={() => onChange({ type: ht.value })}
+                icon={ht.icon}
+                iconBg="bg-[var(--color-primary-50)]"
+                label={ht.label}
+                description={ht.desc}
+              />
+            ))}
+          </div>
         </div>
+
+        {/* Owner role */}
+        <div>
+          <FormLabel>Your Role</FormLabel>
+          <div className="flex gap-2">
+            {OWNER_ROLES.map((role) => (
+              <button
+                key={role.value}
+                type="button"
+                onClick={() => onChange({ ownerRole: role.value })}
+                className={`flex-1 h-11 rounded-xl border-2 px-3 text-sm font-semibold transition-all ${
+                  data.ownerRole === role.value
+                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-neutral-900)]"
+                    : "border-[var(--color-neutral-200)] text-[var(--color-neutral-400)] hover:border-[var(--color-neutral-300)]"
+                }`}
+              >
+                {role.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
-          <Input
+          <FormInput
             label="Year Built"
             type="number"
             placeholder="e.g., 1995"
             value={data.yearBuilt}
             onChange={(e) => onChange({ yearBuilt: e.target.value })}
           />
-          <Input
+          <FormInput
             label="Square Footage"
             type="number"
             placeholder="Optional"
@@ -418,17 +641,18 @@ function StepBasicsAndLocation({
             onChange={(e) => onChange({ sqft: e.target.value })}
           />
         </div>
-        <hr className="border-border" />
+
+        <div className="h-px bg-[var(--color-neutral-200)]" />
 
         <div className="grid grid-cols-2 gap-4">
-          <Input
+          <FormInput
             label="Zip Code"
             placeholder="12345"
             value={data.zip}
             onChange={(e) => onChange({ zip: e.target.value })}
             maxLength={10}
           />
-          <Select
+          <FormSelect
             label="State"
             placeholder="Select"
             options={US_STATES}
@@ -436,21 +660,19 @@ function StepBasicsAndLocation({
             onChange={(e) => onChange({ state: e.target.value })}
           />
         </div>
+
         {climateZone && (
-          <div className="rounded-lg border border-border bg-muted/50 px-3 py-2">
-            <span className="text-xs text-muted-foreground">Climate zone: </span>
-            <span className="text-xs font-medium text-foreground">{climateZone}</span>
+          <div className="rounded-xl border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] px-4 py-3">
+            <span className="text-xs text-[var(--color-neutral-400)]">Climate zone: </span>
+            <span className="text-xs font-semibold text-[var(--color-neutral-900)]">{climateZone}</span>
           </div>
         )}
       </div>
 
-      <div className="mt-auto flex items-center justify-between pb-2">
-        <button type="button" onClick={onBack} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-          Back
-        </button>
-        <Button onClick={onNext} disabled={!canProceed}>Next</Button>
-      </div>
-    </div>
+      <ContinueButton onClick={onNext} disabled={!canProceed} />
+      <BackButton onClick={onBack} />
+      <StepIndicator current={currentStep} total={TOTAL_STEPS} />
+    </>
   );
 }
 
@@ -463,11 +685,13 @@ function StepSystemsAndAppliances({
   onChange,
   onNext,
   onBack,
+  currentStep,
 }: {
   data: FormData;
   onChange: (d: Partial<FormData>) => void;
   onNext: () => void;
   onBack: () => void;
+  currentStep: number;
 }) {
   const toggleSystem = (key: string) => {
     onChange({
@@ -482,12 +706,10 @@ function StepSystemsAndAppliances({
     const current = data.systems[sysKey].subtypes;
     let next: string[];
     if (multiSelect) {
-      // Multi-select: toggle the value in/out of the array
       next = current.includes(subtype)
         ? current.filter((v) => v !== subtype)
         : [...current, subtype];
     } else {
-      // Single-select (radio): select or deselect
       next = current.includes(subtype) ? [] : [subtype];
     }
     onChange({
@@ -506,118 +728,92 @@ function StepSystemsAndAppliances({
 
   const enabledSystems = Object.values(data.systems).filter((s) => s.enabled);
   const systemCount = enabledSystems.length;
-  const subtypeCount = enabledSystems.reduce((sum, s) => sum + s.subtypes.length, 0);
   const applianceCount = Object.values(data.appliances).filter(Boolean).length;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">What&apos;s in Your Home?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Select what applies. We&apos;ll create relevant maintenance tasks for each.
-        </p>
-      </div>
+    <>
+      <StepTitle
+        title="What's in Your Home?"
+        subtitle="Select what applies. We'll create relevant maintenance tasks for each."
+      />
 
       {/* Systems */}
-      <div>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-neutral-400)] mb-3">
           Systems
-        </h3>
-        <div className="grid grid-cols-2 gap-2">
+        </p>
+        <div className="flex flex-col gap-2">
           {SYSTEMS.map((sys) => {
             const entry = data.systems[sys.key];
             return (
-              <button
-                key={sys.key}
-                type="button"
-                onClick={() => toggleSystem(sys.key)}
-                className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all ${
-                  entry.enabled
-                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/50 shadow-sm dark:border-[var(--color-primary-400)] dark:bg-[var(--color-primary-900)]/20"
-                    : "border-border hover:border-muted-foreground/30"
-                }`}
-              >
-                <div className="flex w-full items-center gap-2">
-                  <span className="text-lg">{sys.icon}</span>
-                  <span className="text-sm font-medium text-foreground">{sys.label}</span>
-                  {entry.enabled && (
-                    <svg className="ml-auto h-4 w-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-                <span className="text-xs text-muted-foreground">{sys.hint}</span>
+              <div key={sys.key}>
+                <SelectionCard
+                  selected={entry.enabled}
+                  onClick={() => toggleSystem(sys.key)}
+                  icon={sys.icon}
+                  iconBg={sys.iconBg}
+                  label={sys.label}
+                  description={sys.hint}
+                />
+                {/* Subtype pills when expanded */}
                 {entry.enabled && sys.subtypes && (
-                  <div className="mt-1 flex flex-wrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <div className="mt-1 ml-[52px] flex flex-wrap items-center gap-1.5 pb-1">
                     {sys.subtypes.map((st) => (
                       <button
                         key={st.value}
                         type="button"
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                           entry.subtypes.includes(st.value)
-                            ? "bg-primary text-white"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            ? "bg-[var(--color-primary-500)] text-white"
+                            : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-200)]"
                         }`}
-                        onClick={(e) => { e.stopPropagation(); toggleSubtype(sys.key, st.value, sys.multiSelect); }}
+                        onClick={() => toggleSubtype(sys.key, st.value, sys.multiSelect)}
                       >
                         {st.label}
                       </button>
                     ))}
-                    {entry.subtypes.length > 1 && (
-                      <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/20 px-1 text-[10px] font-semibold text-primary">
-                        {entry.subtypes.length}
-                      </span>
-                    )}
                   </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
       </div>
 
       {/* Appliances */}
-      <div>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="mb-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-neutral-400)] mb-3">
           Major Appliances
-        </h3>
-        <div className="grid grid-cols-3 gap-2">
+        </p>
+        <div className="flex flex-col gap-2">
           {APPLIANCES.map((app) => {
             const active = data.appliances[app.key];
             return (
-              <button
+              <SelectionCard
                 key={app.key}
-                type="button"
+                selected={active}
                 onClick={() => toggleAppliance(app.key)}
-                className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all ${
-                  active
-                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/50 shadow-sm dark:border-[var(--color-primary-400)] dark:bg-[var(--color-primary-900)]/20"
-                    : "border-border hover:border-muted-foreground/30"
-                }`}
-              >
-                <span className="text-xl">{app.icon}</span>
-                <span className="text-xs font-medium text-foreground">{app.label}</span>
-              </button>
+                icon={app.icon}
+                iconBg={app.iconBg}
+                label={app.label}
+              />
             );
           })}
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-center">
-        <span className="text-xs text-muted-foreground">
+      {/* Summary pill */}
+      <div className="rounded-xl border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] px-4 py-3 text-center">
+        <span className="text-xs font-medium text-[var(--color-neutral-400)]">
           {systemCount} system{systemCount !== 1 ? "s" : ""}
-          {subtypeCount > 0 && ` (${subtypeCount} subtype${subtypeCount !== 1 ? "s" : ""})`}
           {" "}and {applianceCount} appliance{applianceCount !== 1 ? "s" : ""} selected
         </span>
       </div>
 
-      <div className="mt-auto flex items-center justify-between pb-2">
-        <button type="button" onClick={onBack} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-          Back
-        </button>
-        <Button onClick={onNext}>Next</Button>
-      </div>
-    </div>
+      <ContinueButton onClick={onNext} />
+      <BackButton onClick={onBack} />
+      <StepIndicator current={currentStep} total={TOTAL_STEPS} />
+    </>
   );
 }
 
@@ -637,50 +833,46 @@ function TaskRow({
   const isEssential = template.priority === "safety" || template.priority === "prevent_damage";
 
   return (
-    <div className={`rounded-lg border p-3 transition-all ${
+    <div className={`rounded-xl border-2 p-4 transition-all ${
       setup.state === "skip"
-        ? "border-border bg-muted/30 opacity-50"
-        : "border-border bg-white dark:bg-[var(--color-neutral-900)]"
+        ? "border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] opacity-50"
+        : "border-[var(--color-neutral-200)] bg-white"
     }`}>
       <div className="flex items-start gap-3">
         {/* Toggle */}
         <button
           type="button"
           onClick={() => onUpdate({ state: setup.state === "skip" ? "track" : "skip" })}
-          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
-            setup.state !== "skip"
-              ? "border-primary bg-primary text-white"
-              : "border-muted-foreground/30 bg-transparent"
-          }`}
+          className="mt-0.5 shrink-0"
           aria-label={setup.state !== "skip" ? "Enabled" : "Skipped"}
         >
-          {setup.state !== "skip" && (
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
+          <SelectionCheckmark selected={setup.state !== "skip"} />
         </button>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">{template.name}</span>
-            {isEssential && <Badge variant="danger" size="sm">Critical</Badge>}
+            <span className="text-sm font-semibold text-[var(--color-neutral-900)]">{template.name}</span>
+            {isEssential && (
+              <span className="inline-flex items-center rounded-full bg-[var(--color-danger-50)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-danger-500)]">
+                Critical
+              </span>
+            )}
           </div>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-[var(--color-neutral-400)]">
             {frequencyLabel(template.frequencyValue, template.frequencyUnit)}
           </span>
 
-          {/* Track / Already Done toggle — only when not skipped */}
+          {/* Track / Already Done toggle -- only when not skipped */}
           {setup.state !== "skip" && (
-            <div className="mt-2 flex flex-col gap-2">
+            <div className="mt-3 flex flex-col gap-2">
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => onUpdate({ state: "track" })}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                     setup.state === "track"
-                      ? "bg-primary text-white"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-[var(--color-primary-500)] text-white"
+                      : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-200)]"
                   }`}
                 >
                   Start tracking
@@ -688,10 +880,10 @@ function TaskRow({
                 <button
                   type="button"
                   onClick={() => onUpdate({ state: "done" })}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                     setup.state === "done"
                       ? "bg-[var(--color-success-500)] text-white"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-200)]"
                   }`}
                 >
                   Already done
@@ -700,11 +892,11 @@ function TaskRow({
 
               {setup.state === "done" && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">When?</span>
+                  <span className="text-xs text-[var(--color-neutral-400)]">When?</span>
                   <select
                     value={setup.doneMonth}
                     onChange={(e) => onUpdate({ doneMonth: Number(e.target.value) })}
-                    className="rounded-md border border-border bg-white px-2 py-1 text-xs text-foreground dark:bg-[var(--color-neutral-900)]"
+                    className="h-9 rounded-xl border border-[var(--color-neutral-200)] bg-white px-3 text-xs font-medium outline-none focus:border-[var(--color-primary-500)] dark:bg-[var(--color-neutral-800)]"
                   >
                     {MONTHS.map((m) => (
                       <option key={m.value} value={m.value}>{m.label}</option>
@@ -713,7 +905,7 @@ function TaskRow({
                   <select
                     value={setup.doneYear}
                     onChange={(e) => onUpdate({ doneYear: Number(e.target.value) })}
-                    className="rounded-md border border-border bg-white px-2 py-1 text-xs text-foreground dark:bg-[var(--color-neutral-900)]"
+                    className="h-9 rounded-xl border border-[var(--color-neutral-200)] bg-white px-3 text-xs font-medium outline-none focus:border-[var(--color-primary-500)] dark:bg-[var(--color-neutral-800)]"
                   >
                     {YEAR_OPTIONS.map((y) => (
                       <option key={y.value} value={y.value}>{y.label}</option>
@@ -736,6 +928,7 @@ function StepPlanPreview({
   onBack,
   onFinish,
   isPending,
+  currentStep,
 }: {
   form: FormData;
   taskSetups: Record<string, TaskSetup>;
@@ -743,6 +936,7 @@ function StepPlanPreview({
   onBack: () => void;
   onFinish: () => void;
   isPending: boolean;
+  currentStep: number;
 }) {
   const templates = useMemo(() => {
     return getApplicableTemplates({
@@ -755,7 +949,6 @@ function StepPlanPreview({
   const grouped = useMemo(() => groupTemplatesByCategory(templates), [templates]);
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
-    // Auto-expand categories that have critical tasks
     const expanded = new Set<string>();
     for (const [cat, catTemplates] of grouped) {
       if (catTemplates.some((t) => t.priority === "safety" || t.priority === "prevent_damage")) {
@@ -778,23 +971,20 @@ function StepPlanPreview({
   const doneCount = Object.values(taskSetups).filter((s) => s.state === "done").length;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 px-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Your Maintenance Plan</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          We found {totalCount} tasks for your home. Customize what to track and mark
-          anything you&apos;ve already done.
-        </p>
-      </div>
+    <>
+      <StepTitle
+        title="Your Maintenance Plan"
+        subtitle={`We found ${totalCount} tasks for your home. Customize what to track and mark anything you've already done.`}
+      />
 
       {/* Summary bar */}
-      <div className="flex items-center gap-3 rounded-xl border border-[var(--color-primary-500)]/30 bg-[var(--color-primary-50)]/50 p-3 dark:bg-[var(--color-primary-900)]/10">
-        <span className="text-2xl font-bold text-primary">{activeCount}</span>
+      <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--color-primary-500)]/30 bg-[var(--color-primary-50)] p-4 mb-4">
+        <span className="text-2xl font-extrabold text-[var(--color-primary-500)]">{activeCount}</span>
         <div className="flex-1">
-          <p className="text-sm font-medium text-foreground">
+          <p className="text-sm font-semibold text-[var(--color-neutral-900)]">
             task{activeCount !== 1 ? "s" : ""} selected
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-[var(--color-neutral-400)]">
             {doneCount > 0 && `${doneCount} already done · `}
             {totalCount - activeCount} skipped
           </p>
@@ -802,7 +992,7 @@ function StepPlanPreview({
       </div>
 
       {/* Category groups */}
-      <div className="flex flex-col gap-2 overflow-y-auto">
+      <div className="flex flex-col gap-3 mb-4">
         {CATEGORY_ORDER.filter((cat) => grouped.has(cat)).map((cat) => {
           const catTemplates = grouped.get(cat)!;
           const expanded = expandedCategories.has(cat);
@@ -810,31 +1000,30 @@ function StepPlanPreview({
           const hasCritical = catTemplates.some((t) => t.priority === "safety" || t.priority === "prevent_damage");
 
           return (
-            <div key={cat} className="rounded-xl border border-border overflow-hidden">
+            <div key={cat} className="rounded-2xl border-2 border-[var(--color-neutral-200)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleCategory(cat)}
-                className="flex w-full items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors"
+                className="flex w-full items-center gap-3 p-4 text-left hover:bg-[var(--color-neutral-50)] transition-colors"
               >
-                <svg
-                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-                <span className="flex-1 text-sm font-semibold text-foreground">
+                <ChevronRight
+                  className={`h-4 w-4 shrink-0 text-[var(--color-neutral-400)] transition-transform ${expanded ? "rotate-90" : ""}`}
+                />
+                <span className="flex-1 text-sm font-semibold text-[var(--color-neutral-900)]">
                   {CATEGORY_LABELS[cat]}
                 </span>
                 {hasCritical && (
-                  <Badge variant="danger" size="sm">Has critical</Badge>
+                  <span className="inline-flex items-center rounded-full bg-[var(--color-danger-50)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-danger-500)]">
+                    Has critical
+                  </span>
                 )}
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs font-medium text-[var(--color-neutral-400)]">
                   {catActiveCount}/{catTemplates.length}
                 </span>
               </button>
 
               {expanded && (
-                <div className="flex flex-col gap-2 border-t border-border bg-muted/20 p-3">
+                <div className="flex flex-col gap-2 border-t border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-3">
                   {catTemplates.map((template) => (
                     <TaskRow
                       key={template.id}
@@ -850,22 +1039,19 @@ function StepPlanPreview({
         })}
       </div>
 
-      <div className="rounded-lg border border-[var(--color-info-500)]/20 bg-[var(--color-info-50)] p-3 dark:bg-sky-950/20">
-        <p className="text-xs text-[var(--color-info-700)] dark:text-sky-300">
+      <div className="rounded-xl border border-[var(--color-info-500)]/20 bg-[var(--color-info-50)] p-4">
+        <p className="text-xs text-[var(--color-info-700)] leading-relaxed">
           You can always add, remove, or adjust tasks later from the Tasks screen.
           Brand and model details can be added when you complete your first task for each appliance.
         </p>
       </div>
 
-      <div className="mt-auto flex items-center justify-between pb-2">
-        <button type="button" onClick={onBack} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-          Back
-        </button>
-        <Button size="lg" onClick={onFinish} loading={isPending}>
-          Create My Plan
-        </Button>
-      </div>
-    </div>
+      <ContinueButton onClick={onFinish} loading={isPending}>
+        Create My Plan
+      </ContinueButton>
+      <BackButton onClick={onBack} />
+      <StepIndicator current={currentStep} total={TOTAL_STEPS} />
+    </>
   );
 }
 
@@ -909,7 +1095,6 @@ export default function OnboardingPage() {
       if (taskSetups[t.id]) {
         setups[t.id] = taskSetups[t.id];
       } else {
-        // Essential tasks default to "track", others to "track" as well but user can skip
         setups[t.id] = {
           templateId: t.id,
           state: "track",
@@ -998,7 +1183,7 @@ export default function OnboardingPage() {
 
         if (!res.ok) throw new Error("Failed to save");
       } catch {
-        // Still navigate on error for now — we'll handle this better later
+        // Still navigate on error for now
         console.error("Failed to save onboarding data");
       }
 
@@ -1012,29 +1197,39 @@ export default function OnboardingPage() {
       : "opacity-0 -translate-x-8"
     : "opacity-100 translate-x-0";
 
+  // Map step numbers: step 1 = welcome (no progress), steps 2-4 = wizard steps 1-3, step 4 = plan preview (step 4 mapped to wizard step 3... let's keep it simple)
+  // Actually: step 1 = welcome, step 2 = basics (wizard step 1), step 3 = systems (wizard step 2), step 4 = plan (wizard step 3)
+  // But we have TOTAL_STEPS = 4 for the wizard portion. Let's count steps 2-4 as wizard steps 1-3.
+  const wizardStep = step - 1; // 0 for welcome, 1-3 for wizard
+
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      {/* Progress bar for steps 2+ */}
       {step > 1 && (
-        <div className="sticky top-0 z-10 bg-background/80 px-6 pb-2 pt-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between pb-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              Step {step - 1} of {TOTAL_STEPS - 1}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {Math.round(((step - 1) / (TOTAL_STEPS - 1)) * 100)}%
-            </span>
-          </div>
-          <Progress value={step - 1} max={TOTAL_STEPS - 1} variant="warning" />
+        <div className="sticky top-0 z-10 bg-background/80 px-5 pb-3 pt-4 backdrop-blur-sm">
+          <ProgressBar currentStep={wizardStep} totalSteps={TOTAL_STEPS - 1} />
         </div>
       )}
 
-      <div className={`flex flex-1 flex-col py-6 transition-all duration-200 ease-out ${translateClass}`}>
+      <div className={`flex flex-1 flex-col max-w-lg mx-auto w-full px-5 py-6 transition-all duration-200 ease-out ${translateClass}`}>
         {step === 1 && <StepWelcome onNext={next} />}
         {step === 2 && (
-          <StepBasicsAndLocation data={form} onChange={updateForm} onNext={next} onBack={back} />
+          <StepBasicsAndLocation
+            data={form}
+            onChange={updateForm}
+            onNext={next}
+            onBack={back}
+            currentStep={wizardStep}
+          />
         )}
         {step === 3 && (
-          <StepSystemsAndAppliances data={form} onChange={updateForm} onNext={next} onBack={back} />
+          <StepSystemsAndAppliances
+            data={form}
+            onChange={updateForm}
+            onNext={next}
+            onBack={back}
+            currentStep={wizardStep}
+          />
         )}
         {step === 4 && (
           <StepPlanPreview
@@ -1044,6 +1239,7 @@ export default function OnboardingPage() {
             onBack={back}
             onFinish={handleFinish}
             isPending={isPending}
+            currentStep={wizardStep}
           />
         )}
       </div>

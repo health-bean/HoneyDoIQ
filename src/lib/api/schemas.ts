@@ -102,6 +102,21 @@ export const onboardingSchema = z.object({
   taskSetups: z.array(onboardingTaskSetupSchema).max(500),
 });
 
+export const updateNotificationPreferencesSchema = z.object({
+  pushEnabled: z.boolean().optional(),
+  emailEnabled: z.boolean().optional(),
+  reminderTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Must be HH:MM format")
+    .optional(),
+  reminderDaysBefore: z
+    .array(z.number().int().min(1).max(30))
+    .max(10)
+    .optional(),
+  weeklyDigest: z.boolean().optional(),
+  weeklyDigestDay: z.number().int().min(0).max(6).optional(),
+});
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
@@ -110,3 +125,4 @@ export type SnoozeTaskInput = z.infer<typeof snoozeTaskSchema>;
 export type InviteInput = z.infer<typeof inviteSchema>;
 export type PushSubscribeInput = z.infer<typeof pushSubscribeSchema>;
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
+export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
