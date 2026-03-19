@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Check,
   ChevronRight,
-  Home,
   Loader2,
 } from "lucide-react";
 import { getApplicableTemplates } from "@/lib/tasks/scheduling";
@@ -526,22 +525,40 @@ function FormSelect({
 
 function StepWelcome({ onNext }: { onNext: () => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-5 text-center">
-      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[var(--color-primary-50)]">
-        <Home className="h-10 w-10 text-[var(--color-primary-500)]" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-[22px] font-extrabold text-[#1c1917] tracking-tight">
+    <div className="flex flex-1 flex-col items-center justify-center -mx-5 -my-6 px-8 bg-gradient-to-b from-[#fffbeb] via-[#fef3c7] to-[#fde68a]">
+      <div className="flex flex-col items-center text-center max-w-xs">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/60 backdrop-blur-sm shadow-sm mb-5">
+          <span className="text-3xl">🏠</span>
+        </div>
+        <h1 className="text-[26px] font-extrabold text-[#451a03] tracking-tight leading-tight">
           Let&apos;s set up your home
         </h1>
-        <p className="mx-auto max-w-sm text-sm text-[var(--color-neutral-400)] leading-relaxed">
-          Answer a few quick questions and we&apos;ll build a personalized maintenance
-          plan you can customize.
+        <p className="mt-2 text-sm text-[#92400e] leading-relaxed">
+          A few quick questions and we&apos;ll build a personalized maintenance plan.
         </p>
+        <div className="mt-6 flex gap-4 text-center">
+          {[
+            { icon: "📋", label: "Track" },
+            { icon: "🔔", label: "Remind" },
+            { icon: "📊", label: "Score" },
+          ].map((item) => (
+            <div key={item.label} className="flex flex-col items-center gap-1">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/50 text-base">
+                {item.icon}
+              </div>
+              <span className="text-[10px] font-bold text-[#78350f]">{item.label}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={onNext}
+          className="w-full h-[48px] bg-[#451a03] text-white rounded-xl font-bold text-[14px] mt-8 transition-all hover:bg-[#78350f] active:scale-[0.98]"
+        >
+          Get Started
+        </button>
+        <p className="mt-3 text-[11px] text-[#92400e]">Takes about 2 minutes</p>
       </div>
-      <ContinueButton onClick={onNext}>
-        Get Started
-      </ContinueButton>
     </div>
   );
 }
@@ -564,12 +581,8 @@ function StepBasicsAndLocation({
   currentStep: number;
 }) {
   const climateZone = data.state ? CLIMATE_ZONES[data.state] ?? "" : "";
-  const canProceed =
-    data.name.trim() !== "" &&
-    data.type !== "" &&
-    data.yearBuilt !== "" &&
-    data.zip.trim().length >= 5 &&
-    data.state !== "";
+  // Only property type is required — everything else is optional enrichment
+  const canProceed = data.type !== "";
 
   return (
     <>
@@ -580,26 +593,30 @@ function StepBasicsAndLocation({
 
       <div className="flex flex-col gap-5">
         <FormInput
-          label="Home Name"
-          placeholder='e.g., "Main House" or "Lake Cabin"'
+          label="Home Name (optional)"
+          placeholder="My Home"
           value={data.name}
           onChange={(e) => onChange({ name: e.target.value })}
         />
 
-        {/* Property Type as selection cards */}
+        {/* Property Type — compact 2-column grid */}
         <div>
           <FormLabel>Property Type</FormLabel>
-          <div className="flex flex-col gap-2.5 max-h-[200px] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-2">
             {HOME_TYPES.map((ht) => (
-              <SelectionCard
+              <button
                 key={ht.value}
-                selected={data.type === ht.value}
+                type="button"
                 onClick={() => onChange({ type: ht.value })}
-                icon={ht.icon}
-                iconBg="bg-[var(--color-primary-50)]"
-                label={ht.label}
-                description={ht.desc}
-              />
+                className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-all ${
+                  data.type === ht.value
+                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
+                    : "border-[var(--color-neutral-200)] bg-white hover:border-[var(--color-neutral-300)]"
+                }`}
+              >
+                <span className="text-lg">{ht.icon}</span>
+                <span className="text-xs font-semibold text-[#1c1917]">{ht.label}</span>
+              </button>
             ))}
           </div>
         </div>
@@ -627,16 +644,16 @@ function StepBasicsAndLocation({
 
         <div className="grid grid-cols-2 gap-4">
           <FormInput
-            label="Year Built"
+            label="Year Built (optional)"
             type="number"
             placeholder="e.g., 1995"
             value={data.yearBuilt}
             onChange={(e) => onChange({ yearBuilt: e.target.value })}
           />
           <FormInput
-            label="Square Footage"
+            label="Sq Ft (optional)"
             type="number"
-            placeholder="Optional"
+            placeholder="e.g., 2000"
             value={data.sqft}
             onChange={(e) => onChange({ sqft: e.target.value })}
           />
@@ -646,14 +663,14 @@ function StepBasicsAndLocation({
 
         <div className="grid grid-cols-2 gap-4">
           <FormInput
-            label="Zip Code"
+            label="Zip Code (optional)"
             placeholder="12345"
             value={data.zip}
             onChange={(e) => onChange({ zip: e.target.value })}
             maxLength={10}
           />
           <FormSelect
-            label="State"
+            label="State (optional)"
             placeholder="Select"
             options={US_STATES}
             value={data.state}
@@ -780,23 +797,28 @@ function StepSystemsAndAppliances({
         </div>
       </div>
 
-      {/* Appliances */}
+      {/* Appliances — compact 2-column grid */}
       <div className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-neutral-400)] mb-3">
           Major Appliances
         </p>
-        <div className="flex flex-col gap-2.5">
+        <div className="grid grid-cols-2 gap-2">
           {APPLIANCES.map((app) => {
             const active = data.appliances[app.key];
             return (
-              <SelectionCard
+              <button
                 key={app.key}
-                selected={active}
+                type="button"
                 onClick={() => toggleAppliance(app.key)}
-                icon={app.icon}
-                iconBg={app.iconBg}
-                label={app.label}
-              />
+                className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-all ${
+                  active
+                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
+                    : "border-[var(--color-neutral-200)] bg-white hover:border-[var(--color-neutral-300)]"
+                }`}
+              >
+                <span className="text-lg">{app.icon}</span>
+                <span className="text-xs font-semibold text-[#1c1917]">{app.label}</span>
+              </button>
             );
           })}
         </div>
@@ -833,9 +855,9 @@ function TaskRow({
   const isEssential = template.priority === "safety" || template.priority === "prevent_damage";
 
   return (
-    <div className={`rounded-xl border-2 p-3.5 transition-all ${
+    <div className={`rounded-xl border p-3.5 transition-all ${
       setup.state === "skip"
-        ? "border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] opacity-50"
+        ? "border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)] opacity-50"
         : "border-[var(--color-neutral-200)] bg-white"
     }`}>
       <div className="flex items-start gap-3">
@@ -978,7 +1000,7 @@ function StepPlanPreview({
       />
 
       {/* Summary bar */}
-      <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--color-primary-500)]/30 bg-[var(--color-primary-50)] p-3.5 mb-4">
+      <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] p-3.5 mb-4">
         <span className="text-2xl font-extrabold text-[var(--color-primary-500)]">{activeCount}</span>
         <div className="flex-1">
           <p className="text-sm font-semibold text-[#1c1917]">
@@ -1000,7 +1022,7 @@ function StepPlanPreview({
           const hasCritical = catTemplates.some((t) => t.priority === "safety" || t.priority === "prevent_damage");
 
           return (
-            <div key={cat} className="rounded-2xl border-2 border-[var(--color-neutral-200)] overflow-hidden">
+            <div key={cat} className="rounded-2xl border border-[var(--color-neutral-200)] overflow-hidden bg-white">
               <button
                 type="button"
                 onClick={() => toggleCategory(cat)}
@@ -1166,10 +1188,10 @@ export default function OnboardingPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             home: {
-              name: form.name,
+              name: form.name.trim() || "My Home",
               type: form.type,
               ownerRole: form.ownerRole,
-              yearBuilt: Number(form.yearBuilt),
+              yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : null,
               sqft: form.sqft ? Number(form.sqft) : null,
               zip: form.zip,
               state: form.state,
