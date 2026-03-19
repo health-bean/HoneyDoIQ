@@ -20,6 +20,22 @@ import type {
 // Types
 // ---------------------------------------------------------------------------
 
+interface HomeItem {
+  key: string;
+  label: string;
+  icon: string;
+  type: "system" | "appliance";
+  mappedSystem?: SystemType;
+  mappedAppliance?: ApplianceCategory;
+  subtypes?: { value: string; label: string }[];
+  allowOtherSubtype?: boolean;
+}
+
+interface HomeItemGroup {
+  label: string;
+  items: HomeItem[];
+}
+
 interface FormData {
   name: string;
   type: string;
@@ -28,8 +44,9 @@ interface FormData {
   sqft: string;
   zip: string;
   state: string;
-  systems: Record<string, { enabled: boolean; subtypes: string[] }>;
-  appliances: Record<string, boolean>;
+  selectedItems: Record<string, { enabled: boolean; subtypes: string[]; otherSubtype: string }>;
+  healthFlags: Record<string, boolean>;
+  otherNotes: string;
 }
 
 type TaskSetupState = "track" | "done" | "skip";
@@ -45,20 +62,20 @@ interface TaskSetup {
 // Constants
 // ---------------------------------------------------------------------------
 
-const TOTAL_STEPS = 4; // Welcome is step 0 (not counted), steps 1-4
+const TOTAL_STEPS = 5; // Welcome is step 0 (not counted), steps 1-5
 
 const HOME_TYPES = [
-  { value: "single_family", label: "Single Family", icon: "🏡", desc: "Detached house" },
-  { value: "townhouse", label: "Townhouse", icon: "🏘️", desc: "Row or attached home" },
-  { value: "condo", label: "Condo", icon: "🏢", desc: "Unit in a building" },
-  { value: "apartment", label: "Apartment", icon: "🏬", desc: "Rental unit" },
-  { value: "multi_family", label: "Multi-Family", icon: "🏠", desc: "Duplex or triplex" },
-  { value: "mobile_home", label: "Mobile Home", icon: "🏕️", desc: "Manufactured home" },
-  { value: "vacation_home", label: "Vacation Home", icon: "🌴", desc: "Seasonal property" },
-  { value: "rental_property", label: "Rental Property", icon: "🔑", desc: "Investment property" },
-  { value: "apartment_building", label: "Apartment Building", icon: "🏗️", desc: "Multi-unit building" },
-  { value: "office_commercial", label: "Office / Commercial", icon: "🏛️", desc: "Business space" },
-  { value: "warehouse_industrial", label: "Warehouse / Industrial", icon: "🏭", desc: "Industrial space" },
+  { value: "single_family", label: "Single Family", icon: "\u{1F3E1}", desc: "Detached house" },
+  { value: "townhouse", label: "Townhouse", icon: "\u{1F3D8}\uFE0F", desc: "Row or attached home" },
+  { value: "condo", label: "Condo", icon: "\u{1F3E2}", desc: "Unit in a building" },
+  { value: "apartment", label: "Apartment", icon: "\u{1F3EC}", desc: "Rental unit" },
+  { value: "multi_family", label: "Multi-Family", icon: "\u{1F3E0}", desc: "Duplex or triplex" },
+  { value: "mobile_home", label: "Mobile Home", icon: "\u{1F3D5}\uFE0F", desc: "Manufactured home" },
+  { value: "vacation_home", label: "Vacation Home", icon: "\u{1F334}", desc: "Seasonal property" },
+  { value: "rental_property", label: "Rental Property", icon: "\u{1F511}", desc: "Investment property" },
+  { value: "apartment_building", label: "Apartment Building", icon: "\u{1F3D7}\uFE0F", desc: "Multi-unit building" },
+  { value: "office_commercial", label: "Office / Commercial", icon: "\u{1F3DB}\uFE0F", desc: "Business space" },
+  { value: "warehouse_industrial", label: "Warehouse / Industrial", icon: "\u{1F3ED}", desc: "Industrial space" },
 ];
 
 const OWNER_ROLES = [
@@ -141,97 +158,103 @@ const CLIMATE_ZONES: Record<string, string> = {
   DC: "Mixed-Humid (Zone 4A)",
 };
 
-interface SystemDef {
-  key: string;
-  mappedType: SystemType;
-  icon: string;
-  label: string;
-  hint: string;
-  multiSelect: boolean;
-  iconBg: string;
-  subtypes?: { value: string; label: string }[];
-}
-
-const SYSTEMS: SystemDef[] = [
-  { key: "hvac", mappedType: "hvac", icon: "🌡️", label: "HVAC", hint: "Heating & cooling reminders", iconBg: "bg-[var(--color-danger-50)]", multiSelect: true,
-    subtypes: [
-      { value: "forced-air", label: "Forced Air" },
-      { value: "radiant", label: "Radiant" },
-      { value: "mini-split", label: "Mini-Split" },
-      { value: "window-units", label: "Window Units" },
+const HOME_ITEM_GROUPS: HomeItemGroup[] = [
+  {
+    label: "Heating & Cooling",
+    items: [
+      { key: "hvac", label: "Heating & Cooling", icon: "\u{1F321}\uFE0F", type: "system", mappedSystem: "hvac",
+        subtypes: [
+          { value: "forced-air", label: "Forced Air" },
+          { value: "radiant", label: "Radiant" },
+          { value: "mini-split", label: "Mini-Split" },
+          { value: "window-units", label: "Window Units" },
+        ],
+      },
+      { key: "furnace", label: "Furnace", icon: "\u{1F525}", type: "appliance", mappedAppliance: "furnace" as ApplianceCategory },
+      { key: "ac-unit", label: "AC Unit", icon: "\u2744\uFE0F", type: "appliance", mappedAppliance: "ac_unit" as ApplianceCategory },
     ],
   },
-  { key: "plumbing", mappedType: "plumbing", icon: "🚿", label: "Plumbing", hint: "Pipes, drains & water heater", iconBg: "bg-[var(--color-info-50)]", multiSelect: true,
-    subtypes: [
-      { value: "tank-water-heater", label: "Tank Water Heater" },
-      { value: "tankless-water-heater", label: "Tankless / On-Demand" },
-      { value: "water-softener", label: "Water Softener" },
-      { value: "sump-pump", label: "Sump Pump" },
+  {
+    label: "Water & Plumbing",
+    items: [
+      { key: "water-heater", label: "Water Heater", icon: "\u{1F525}", type: "appliance", mappedAppliance: "water_heater" as ApplianceCategory,
+        subtypes: [{ value: "tank", label: "Tank" }, { value: "tankless", label: "Tankless" }],
+      },
+      { key: "water-source", label: "Water Source", icon: "\u{1F4A7}", type: "system", mappedSystem: "water_source",
+        subtypes: [{ value: "municipal", label: "Municipal" }, { value: "well", label: "Well" }],
+      },
+      { key: "sewage", label: "Sewer & Septic", icon: "\u{1F3D7}\uFE0F", type: "system", mappedSystem: "sewage",
+        subtypes: [{ value: "sewer", label: "Sewer" }, { value: "septic", label: "Septic" }],
+      },
+      { key: "water-softener", label: "Water Softener", icon: "\u{1F4A6}", type: "appliance", mappedAppliance: "water_softener" as ApplianceCategory },
+      { key: "sump-pump", label: "Sump Pump", icon: "\u{1F527}", type: "appliance", mappedAppliance: "sump_pump" as ApplianceCategory },
     ],
   },
-  { key: "electrical", mappedType: "electrical", icon: "⚡", label: "Electrical", hint: "Panel, outlets & wiring", iconBg: "bg-[var(--color-warning-50)]", multiSelect: true,
-    subtypes: [
-      { value: "breaker-panel", label: "Breaker Panel" },
-      { value: "generator", label: "Generator" },
-      { value: "solar", label: "Solar Panels" },
-      { value: "ev-charger", label: "EV Charger" },
+  {
+    label: "Kitchen",
+    items: [
+      { key: "refrigerator", label: "Refrigerator", icon: "\u{1F9CA}", type: "appliance", mappedAppliance: "refrigerator" },
+      { key: "dishwasher", label: "Dishwasher", icon: "\u{1F37D}\uFE0F", type: "appliance", mappedAppliance: "dishwasher" },
+      { key: "oven-range", label: "Oven / Range", icon: "\u{1F373}", type: "appliance", mappedAppliance: "oven_range" },
+      { key: "microwave", label: "Microwave", icon: "\u{1F4E1}", type: "appliance", mappedAppliance: "microwave" },
+      { key: "garbage-disposal", label: "Garbage Disposal", icon: "\u267B\uFE0F", type: "appliance", mappedAppliance: "garbage_disposal" },
     ],
   },
-  { key: "roofing", mappedType: "roofing", icon: "🏠", label: "Roofing", hint: "Roof & gutter maintenance", iconBg: "bg-[var(--color-primary-50)]", multiSelect: true,
-    subtypes: [
-      { value: "asphalt-shingle", label: "Asphalt Shingle" },
-      { value: "metal", label: "Metal" },
-      { value: "tile", label: "Tile" },
+  {
+    label: "Laundry",
+    items: [
+      { key: "washing-machine", label: "Washing Machine", icon: "\u{1F455}", type: "appliance", mappedAppliance: "washing_machine" },
+      { key: "dryer", label: "Dryer", icon: "\u{1F300}", type: "appliance", mappedAppliance: "dryer" },
     ],
   },
-  { key: "foundation", mappedType: "foundation", icon: "🧱", label: "Foundation", hint: "Structural & moisture checks", iconBg: "bg-[var(--color-neutral-100)]", multiSelect: true,
-    subtypes: [
-      { value: "slab", label: "Slab" },
-      { value: "crawlspace", label: "Crawlspace" },
-      { value: "basement", label: "Basement" },
+  {
+    label: "Structure",
+    items: [
+      { key: "roofing", label: "Roofing", icon: "\u{1F3E0}", type: "system", mappedSystem: "roofing",
+        subtypes: [
+          { value: "asphalt-shingle", label: "Asphalt Shingle" },
+          { value: "metal", label: "Metal" },
+          { value: "tile", label: "Tile" },
+        ],
+        allowOtherSubtype: true,
+      },
+      { key: "foundation", label: "Foundation", icon: "\u{1F9F1}", type: "system", mappedSystem: "foundation",
+        subtypes: [
+          { value: "slab", label: "Slab" },
+          { value: "crawlspace", label: "Crawlspace" },
+          { value: "basement", label: "Basement" },
+        ],
+      },
+      { key: "electrical", label: "Electrical", icon: "\u26A1", type: "system", mappedSystem: "electrical" },
+      { key: "plumbing", label: "Plumbing", icon: "\u{1F6BF}", type: "system", mappedSystem: "plumbing" },
     ],
   },
-  { key: "water-source", mappedType: "water_source", icon: "💧", label: "Water Source", hint: "Water quality & supply", iconBg: "bg-[var(--color-info-50)]", multiSelect: false,
-    subtypes: [
-      { value: "municipal", label: "Municipal" },
-      { value: "well", label: "Well" },
+  {
+    label: "Outdoor",
+    items: [
+      { key: "irrigation", label: "Sprinklers", icon: "\u{1F331}", type: "system", mappedSystem: "irrigation" },
+      { key: "pool", label: "Pool / Spa", icon: "\u{1F3CA}", type: "system", mappedSystem: "pool" },
+      { key: "hot-tub", label: "Hot Tub", icon: "\u2668\uFE0F", type: "appliance", mappedAppliance: "hot_tub" },
+      { key: "generator", label: "Generator", icon: "\u2699\uFE0F", type: "appliance", mappedAppliance: "generator" },
+      { key: "garage-door", label: "Garage Door", icon: "\u{1F697}", type: "appliance", mappedAppliance: "garage_door" },
     ],
   },
-  { key: "sewage", mappedType: "sewage", icon: "🏗️", label: "Sewage", hint: "Sewer or septic maintenance", iconBg: "bg-[var(--color-neutral-100)]", multiSelect: false,
-    subtypes: [
-      { value: "sewer", label: "Sewer" },
-      { value: "septic", label: "Septic" },
+  {
+    label: "Safety & Security",
+    items: [
+      { key: "security", label: "Security System", icon: "\u{1F512}", type: "system", mappedSystem: "security" },
     ],
   },
-  { key: "irrigation", mappedType: "irrigation", icon: "🌱", label: "Irrigation", hint: "Sprinkler system care", iconBg: "bg-[var(--color-success-50)]", multiSelect: false },
-  { key: "pool", mappedType: "pool", icon: "🏊", label: "Pool", hint: "Pool chemicals & equipment", iconBg: "bg-[var(--color-info-50)]", multiSelect: false },
-  { key: "security", mappedType: "security", icon: "🔒", label: "Security", hint: "Alarm & camera system", iconBg: "bg-[var(--color-warning-50)]", multiSelect: false },
 ];
 
-interface ApplianceDef {
-  key: string;
-  mappedCategory: ApplianceCategory;
-  icon: string;
-  label: string;
-  iconBg: string;
-}
-
-const APPLIANCES: ApplianceDef[] = [
-  { key: "refrigerator", mappedCategory: "refrigerator", icon: "🧊", label: "Refrigerator", iconBg: "bg-[var(--color-info-50)]" },
-  { key: "dishwasher", mappedCategory: "dishwasher", icon: "🍽️", label: "Dishwasher", iconBg: "bg-[var(--color-primary-50)]" },
-  { key: "washing-machine", mappedCategory: "washing_machine", icon: "👕", label: "Washing Machine", iconBg: "bg-[var(--color-info-50)]" },
-  { key: "dryer", mappedCategory: "dryer", icon: "🌀", label: "Dryer", iconBg: "bg-[var(--color-warning-50)]" },
-  { key: "oven-range", mappedCategory: "oven_range", icon: "🍳", label: "Oven / Range", iconBg: "bg-[var(--color-danger-50)]" },
-  { key: "microwave", mappedCategory: "microwave", icon: "📡", label: "Microwave", iconBg: "bg-[var(--color-neutral-100)]" },
-  { key: "garbage-disposal", mappedCategory: "garbage_disposal", icon: "♻️", label: "Garbage Disposal", iconBg: "bg-[var(--color-success-50)]" },
-  { key: "water-heater", mappedCategory: "water_heater", icon: "🔥", label: "Water Heater", iconBg: "bg-[var(--color-danger-50)]" },
-  { key: "furnace", mappedCategory: "furnace", icon: "🌬️", label: "Furnace", iconBg: "bg-[var(--color-warning-50)]" },
-  { key: "ac-unit", mappedCategory: "ac_unit", icon: "❄️", label: "AC Unit", iconBg: "bg-[var(--color-info-50)]" },
-  { key: "water-softener", mappedCategory: "water_softener", icon: "💦", label: "Water Softener", iconBg: "bg-[var(--color-info-50)]" },
-  { key: "garage-door", mappedCategory: "garage_door", icon: "🚗", label: "Garage Door", iconBg: "bg-[var(--color-neutral-100)]" },
-  { key: "sump-pump", mappedCategory: "sump_pump", icon: "🔧", label: "Sump Pump", iconBg: "bg-[var(--color-neutral-100)]" },
-  { key: "generator", mappedCategory: "generator", icon: "⚙️", label: "Generator", iconBg: "bg-[var(--color-warning-50)]" },
-  { key: "hot-tub", mappedCategory: "hot_tub", icon: "♨️", label: "Hot Tub", iconBg: "bg-[var(--color-danger-50)]" },
+const HEALTH_OPTIONS: { key: string; label: string; icon: string; desc: string }[] = [
+  { key: "hasAllergies", label: "Allergies or asthma", icon: "\u{1FAC1}", desc: "We'll increase air quality tasks" },
+  { key: "hasYoungChildren", label: "Young children (under 5)", icon: "\u{1F476}", desc: "We'll add safety checks" },
+  { key: "hasPets", label: "Pets", icon: "\u{1F43E}", desc: "More frequent filter changes" },
+  { key: "hasElderly", label: "Elderly family (65+)", icon: "\u{1F474}", desc: "We'll add accessibility checks" },
+  { key: "hasImmunocompromised", label: "Immune-compromised", icon: "\u{1F6E1}\uFE0F", desc: "Extra mold & water quality checks" },
+  { key: "prioritizeAirQuality", label: "Better indoor air quality", icon: "\u{1F331}", desc: "Humidity, ventilation, radon" },
+  { key: "prioritizeEnergyEfficiency", label: "Energy efficiency", icon: "\u26A1", desc: "Weatherstripping, insulation, audits" },
 ];
 
 const CATEGORY_LABELS: Record<TaskCategory, string> = {
@@ -281,32 +304,46 @@ const YEAR_OPTIONS = getYearOptions();
 // Helpers
 // ---------------------------------------------------------------------------
 
-function initialSystems(): Record<string, { enabled: boolean; subtypes: string[] }> {
-  const map: Record<string, { enabled: boolean; subtypes: string[] }> = {};
-  for (const s of SYSTEMS) {
-    map[s.key] = { enabled: false, subtypes: [] };
+function initialSelectedItems(): Record<string, { enabled: boolean; subtypes: string[]; otherSubtype: string }> {
+  const map: Record<string, { enabled: boolean; subtypes: string[]; otherSubtype: string }> = {};
+  for (const group of HOME_ITEM_GROUPS) {
+    for (const item of group.items) {
+      map[item.key] = { enabled: false, subtypes: [], otherSubtype: "" };
+    }
   }
   return map;
 }
 
-function initialAppliances(): Record<string, boolean> {
+function initialHealthFlags(): Record<string, boolean> {
   const map: Record<string, boolean> = {};
-  for (const a of APPLIANCES) {
-    map[a.key] = false;
+  for (const opt of HEALTH_OPTIONS) {
+    map[opt.key] = false;
   }
   return map;
 }
 
-function getActiveSystemTypes(systems: FormData["systems"]): SystemType[] {
-  return SYSTEMS
-    .filter((s) => systems[s.key].enabled)
-    .map((s) => s.mappedType);
+function getActiveSystemTypes(selectedItems: FormData["selectedItems"]): SystemType[] {
+  const systems: SystemType[] = [];
+  for (const group of HOME_ITEM_GROUPS) {
+    for (const item of group.items) {
+      if (item.type === "system" && item.mappedSystem && selectedItems[item.key]?.enabled) {
+        systems.push(item.mappedSystem);
+      }
+    }
+  }
+  return systems;
 }
 
-function getActiveApplianceCategories(appliances: FormData["appliances"]): ApplianceCategory[] {
-  return APPLIANCES
-    .filter((a) => appliances[a.key])
-    .map((a) => a.mappedCategory);
+function getActiveApplianceCategories(selectedItems: FormData["selectedItems"]): ApplianceCategory[] {
+  const appliances: ApplianceCategory[] = [];
+  for (const group of HOME_ITEM_GROUPS) {
+    for (const item of group.items) {
+      if (item.type === "appliance" && item.mappedAppliance && selectedItems[item.key]?.enabled) {
+        appliances.push(item.mappedAppliance);
+      }
+    }
+  }
+  return appliances;
 }
 
 function frequencyLabel(value: number, unit: string): string {
@@ -395,6 +432,18 @@ function BackButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+function SkipLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-xs font-medium text-[var(--color-neutral-400)] text-center mt-2 w-full"
+    >
+      Skip, I&apos;ll set this up later &rarr;
+    </button>
+  );
+}
+
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <p className="text-center text-xs text-[var(--color-neutral-400)] font-medium mt-3">
@@ -414,48 +463,6 @@ function SelectionCheckmark({ selected }: { selected: boolean }) {
     >
       {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
     </div>
-  );
-}
-
-function SelectionCard({
-  selected,
-  onClick,
-  icon,
-  iconBg = "bg-[var(--color-primary-50)]",
-  label,
-  description,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  iconBg?: string;
-  label: string;
-  description?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-3 p-3.5 bg-white rounded-2xl border-2 cursor-pointer transition-all w-full text-left ${
-        selected
-          ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
-          : "border-[var(--color-neutral-200)] hover:border-[var(--color-neutral-300)]"
-      }`}
-    >
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${iconBg}`}>
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <span className="text-sm font-semibold text-[#1c1917] block">{label}</span>
-        {description && (
-          <span className="text-xs text-[var(--color-neutral-400)]">{description}</span>
-        )}
-        {children}
-      </div>
-      <SelectionCheckmark selected={selected} />
-    </button>
   );
 }
 
@@ -542,7 +549,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
     <div className="flex flex-1 flex-col items-center justify-center -mx-5 -my-6 px-8 bg-gradient-to-b from-[#fffbeb] via-[#fef3c7] to-[#fde68a]">
       <div className="flex flex-col items-center text-center max-w-xs">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/60 backdrop-blur-sm shadow-sm mb-5">
-          <span className="text-3xl">🏠</span>
+          <span className="text-3xl">{"\u{1F3E0}"}</span>
         </div>
         <h1 className="text-[26px] font-extrabold text-[#451a03] tracking-tight leading-tight">
           Let&apos;s set up your home
@@ -552,9 +559,9 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         </p>
         <div className="mt-6 flex gap-4 text-center">
           {[
-            { icon: "📋", label: "Track" },
-            { icon: "🔔", label: "Remind" },
-            { icon: "📊", label: "Score" },
+            { icon: "\u{1F4CB}", label: "Track" },
+            { icon: "\u{1F514}", label: "Remind" },
+            { icon: "\u{1F4CA}", label: "Score" },
           ].map((item) => (
             <div key={item.label} className="flex flex-col items-center gap-1">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/50 text-base">
@@ -578,10 +585,10 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// Step 2: Home Basics + Location (combined)
+// Step 2: About Your Home (Basics + Location)
 // ---------------------------------------------------------------------------
 
-function StepBasicsAndLocation({
+function StepAboutHome({
   data,
   onChange,
   onNext,
@@ -613,7 +620,7 @@ function StepBasicsAndLocation({
           onChange={(e) => onChange({ name: e.target.value })}
         />
 
-        {/* Property Type — compact 2-column grid */}
+        {/* Property Type -- compact 2-column grid */}
         <div>
           <FormLabel>Property Type</FormLabel>
           <div className="grid grid-cols-2 gap-2">
@@ -708,153 +715,226 @@ function StepBasicsAndLocation({
 }
 
 // ---------------------------------------------------------------------------
-// Step 3: Systems & Appliances (combined)
+// Step 3: What's In Your Home (unified categories)
 // ---------------------------------------------------------------------------
 
-function StepSystemsAndAppliances({
+function StepWhatsInYourHome({
   data,
   onChange,
   onNext,
   onBack,
+  onSkip,
   currentStep,
 }: {
   data: FormData;
   onChange: (d: Partial<FormData>) => void;
   onNext: () => void;
   onBack: () => void;
+  onSkip: () => void;
   currentStep: number;
 }) {
-  const toggleSystem = (key: string) => {
+  const toggleItem = (key: string) => {
+    const current = data.selectedItems[key];
     onChange({
-      systems: {
-        ...data.systems,
-        [key]: { ...data.systems[key], enabled: !data.systems[key].enabled },
+      selectedItems: {
+        ...data.selectedItems,
+        [key]: { ...current, enabled: !current.enabled },
       },
     });
   };
 
-  const toggleSubtype = (sysKey: string, subtype: string, multiSelect: boolean) => {
-    const current = data.systems[sysKey].subtypes;
-    let next: string[];
-    if (multiSelect) {
-      next = current.includes(subtype)
-        ? current.filter((v) => v !== subtype)
-        : [...current, subtype];
-    } else {
-      next = current.includes(subtype) ? [] : [subtype];
-    }
+  const toggleSubtype = (itemKey: string, subtype: string) => {
+    const current = data.selectedItems[itemKey];
+    const subtypes = current.subtypes.includes(subtype)
+      ? current.subtypes.filter((v) => v !== subtype)
+      : [...current.subtypes, subtype];
     onChange({
-      systems: {
-        ...data.systems,
-        [sysKey]: { ...data.systems[sysKey], subtypes: next },
+      selectedItems: {
+        ...data.selectedItems,
+        [itemKey]: { ...current, subtypes },
       },
     });
   };
 
-  const toggleAppliance = (key: string) => {
+  const setOtherSubtype = (itemKey: string, value: string) => {
+    const current = data.selectedItems[itemKey];
     onChange({
-      appliances: { ...data.appliances, [key]: !data.appliances[key] },
+      selectedItems: {
+        ...data.selectedItems,
+        [itemKey]: { ...current, otherSubtype: value },
+      },
     });
   };
 
-  const enabledSystems = Object.values(data.systems).filter((s) => s.enabled);
-  const systemCount = enabledSystems.length;
-  const applianceCount = Object.values(data.appliances).filter(Boolean).length;
+  const selectedCount = Object.values(data.selectedItems).filter((s) => s.enabled).length;
 
   return (
     <>
       <StepTitle
-        title="What's in Your Home?"
-        subtitle="Select what applies. We'll create relevant maintenance tasks for each."
+        title="What's In Your Home?"
+        subtitle="Select what applies — you can always add more from your home profile."
       />
 
-      {/* Systems */}
-      <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-neutral-400)] mb-3">
-          Systems
-        </p>
-        <div className="flex flex-col gap-2.5">
-          {SYSTEMS.map((sys) => {
-            const entry = data.systems[sys.key];
-            return (
-              <div key={sys.key}>
-                <SelectionCard
-                  selected={entry.enabled}
-                  onClick={() => toggleSystem(sys.key)}
-                  icon={sys.icon}
-                  iconBg={sys.iconBg}
-                  label={sys.label}
-                  description={sys.hint}
-                />
-                {/* Subtype pills when expanded */}
-                {entry.enabled && sys.subtypes && (
-                  <div className="mt-1 ml-[52px] flex flex-wrap items-center gap-1.5 pb-1">
-                    {sys.subtypes.map((st) => (
-                      <button
-                        key={st.value}
-                        type="button"
-                        className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                          entry.subtypes.includes(st.value)
-                            ? "bg-[var(--color-primary-500)] text-white"
-                            : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-200)]"
-                        }`}
-                        onClick={() => toggleSubtype(sys.key, st.value, sys.multiSelect)}
-                      >
-                        {st.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+      <div className="flex flex-col gap-6 mb-4">
+        {HOME_ITEM_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-neutral-400)] mb-2">
+              {group.label}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {group.items.map((item) => {
+                const selection = data.selectedItems[item.key];
+                const active = selection?.enabled;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => toggleItem(item.key)}
+                    className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-all ${
+                      active
+                        ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
+                        : "border-[var(--color-neutral-200)] bg-white hover:border-[var(--color-neutral-300)]"
+                    }`}
+                  >
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-xs font-semibold text-[#1c1917]">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Subtype pills for enabled items with subtypes */}
+            {group.items.map((item) => {
+              const selection = data.selectedItems[item.key];
+              if (!selection?.enabled || !item.subtypes) return null;
+              return (
+                <div key={`${item.key}-subtypes`} className="mt-2 ml-1 flex flex-wrap items-center gap-1.5">
+                  {item.subtypes.map((st) => (
+                    <button
+                      key={st.value}
+                      type="button"
+                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                        selection.subtypes.includes(st.value)
+                          ? "bg-[var(--color-primary-500)] text-white"
+                          : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-200)]"
+                      }`}
+                      onClick={() => toggleSubtype(item.key, st.value)}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                  {item.allowOtherSubtype && (
+                    <input
+                      type="text"
+                      placeholder="Other..."
+                      value={selection.otherSubtype}
+                      onChange={(e) => setOtherSubtype(item.key, e.target.value)}
+                      className="h-7 rounded-full border border-[var(--color-neutral-200)] bg-white px-3 text-xs font-medium outline-none focus:border-[var(--color-primary-500)] w-24"
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
-      {/* Appliances — compact 2-column grid */}
-      <div className="mb-4">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-neutral-400)] mb-3">
-          Major Appliances
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {APPLIANCES.map((app) => {
-            const active = data.appliances[app.key];
-            return (
-              <button
-                key={app.key}
-                type="button"
-                onClick={() => toggleAppliance(app.key)}
-                className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-all ${
-                  active
-                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
-                    : "border-[var(--color-neutral-200)] bg-white hover:border-[var(--color-neutral-300)]"
-                }`}
-              >
-                <span className="text-lg">{app.icon}</span>
-                <span className="text-xs font-semibold text-[#1c1917]">{app.label}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Other notes */}
+      <div className="mb-2">
+        <FormLabel>Anything else we should know?</FormLabel>
+        <input
+          type="text"
+          placeholder="e.g., radiant floor heating, well water..."
+          value={data.otherNotes}
+          onChange={(e) => onChange({ otherNotes: e.target.value })}
+          className="h-10 w-full rounded-xl border border-[var(--color-neutral-200)] bg-white px-4 text-sm font-medium focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-100)] outline-none transition-all"
+        />
       </div>
 
       {/* Summary pill */}
       <div className="rounded-xl border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] px-4 py-3 text-center">
         <span className="text-xs font-medium text-[var(--color-neutral-400)]">
-          {systemCount} system{systemCount !== 1 ? "s" : ""}
-          {" "}and {applianceCount} appliance{applianceCount !== 1 ? "s" : ""} selected
+          {selectedCount} item{selectedCount !== 1 ? "s" : ""} selected
         </span>
       </div>
 
       <ContinueButton onClick={onNext} />
       <BackButton onClick={onBack} />
+      <SkipLink onClick={onSkip} />
       <StepIndicator current={currentStep} total={TOTAL_STEPS} />
     </>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Step 4: Plan Preview
+// Step 4: Your Household (health flags)
+// ---------------------------------------------------------------------------
+
+function StepHousehold({
+  data,
+  onChange,
+  onNext,
+  onBack,
+  onSkip,
+  currentStep,
+}: {
+  data: FormData;
+  onChange: (d: Partial<FormData>) => void;
+  onNext: () => void;
+  onBack: () => void;
+  onSkip: () => void;
+  currentStep: number;
+}) {
+  const toggleFlag = (key: string) => {
+    onChange({
+      healthFlags: {
+        ...data.healthFlags,
+        [key]: !data.healthFlags[key],
+      },
+    });
+  };
+
+  return (
+    <>
+      <StepTitle
+        title="Your Household"
+        subtitle="This helps us personalize your plan — you can set this up anytime in settings."
+      />
+
+      <div className="flex flex-col gap-2.5">
+        {HEALTH_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => toggleFlag(opt.key)}
+            className={`flex items-center gap-3 p-3.5 bg-white rounded-2xl border-2 cursor-pointer transition-all w-full text-left ${
+              data.healthFlags[opt.key]
+                ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
+                : "border-[var(--color-neutral-200)] hover:border-[var(--color-neutral-300)]"
+            }`}
+          >
+            <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-50)] flex items-center justify-center text-lg shrink-0">
+              {opt.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-semibold text-[#1c1917] block">{opt.label}</span>
+              <span className="text-xs text-[var(--color-neutral-400)]">{opt.desc}</span>
+            </div>
+            <SelectionCheckmark selected={data.healthFlags[opt.key]} />
+          </button>
+        ))}
+      </div>
+
+      <ContinueButton onClick={onNext} />
+      <BackButton onClick={onBack} />
+      <SkipLink onClick={onSkip} />
+      <StepIndicator current={currentStep} total={TOTAL_STEPS} />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Step 5: Plan Preview
 // ---------------------------------------------------------------------------
 
 function TaskRow({
@@ -963,6 +1043,7 @@ function StepPlanPreview({
   onUpdateTask,
   onBack,
   onFinish,
+  onSkip,
   isPending,
   currentStep,
 }: {
@@ -971,16 +1052,21 @@ function StepPlanPreview({
   onUpdateTask: (templateId: string, update: Partial<TaskSetup>) => void;
   onBack: () => void;
   onFinish: () => void;
+  onSkip: () => void;
   isPending: boolean;
   currentStep: number;
 }) {
+  const healthFlags = useMemo(() => {
+    return Object.values(form.healthFlags).some(Boolean) ? form.healthFlags : undefined;
+  }, [form.healthFlags]);
+
   const templates = useMemo(() => {
     return getApplicableTemplates({
       type: form.type as HomeType,
-      systems: getActiveSystemTypes(form.systems),
-      appliances: getActiveApplianceCategories(form.appliances),
-    });
-  }, [form]);
+      systems: getActiveSystemTypes(form.selectedItems),
+      appliances: getActiveApplianceCategories(form.selectedItems),
+    }, healthFlags);
+  }, [form, healthFlags]);
 
   const grouped = useMemo(() => groupTemplatesByCategory(templates), [templates]);
 
@@ -1021,7 +1107,7 @@ function StepPlanPreview({
             task{activeCount !== 1 ? "s" : ""} selected
           </p>
           <p className="text-xs text-[var(--color-neutral-400)]">
-            {doneCount > 0 && `${doneCount} already done · `}
+            {doneCount > 0 && `${doneCount} already done \u00B7 `}
             {totalCount - activeCount} skipped
           </p>
         </div>
@@ -1086,6 +1172,7 @@ function StepPlanPreview({
         Create My Plan
       </ContinueButton>
       <BackButton onClick={onBack} />
+      <SkipLink onClick={onSkip} />
       <StepIndicator current={currentStep} total={TOTAL_STEPS} />
     </>
   );
@@ -1110,19 +1197,21 @@ export default function OnboardingPage() {
     sqft: "",
     zip: "",
     state: "",
-    systems: initialSystems(),
-    appliances: initialAppliances(),
+    selectedItems: initialSelectedItems(),
+    healthFlags: initialHealthFlags(),
+    otherNotes: "",
   });
 
   const [taskSetups, setTaskSetups] = useState<Record<string, TaskSetup>>({});
 
-  // When entering step 4, compute applicable templates and initialize setups
+  // When entering step 5, compute applicable templates and initialize setups
   const initializeTaskSetups = useCallback(() => {
+    const healthFlags = Object.values(form.healthFlags).some(Boolean) ? form.healthFlags : undefined;
     const templates = getApplicableTemplates({
       type: form.type as HomeType,
-      systems: getActiveSystemTypes(form.systems),
-      appliances: getActiveApplianceCategories(form.appliances),
-    });
+      systems: getActiveSystemTypes(form.selectedItems),
+      appliances: getActiveApplianceCategories(form.selectedItems),
+    }, healthFlags);
 
     const now = new Date();
     const setups: Record<string, TaskSetup> = {};
@@ -1156,8 +1245,8 @@ export default function OnboardingPage() {
   const goTo = useCallback(
     (next: number, dir: "forward" | "backward") => {
       if (animating) return;
-      // Initialize task setups when entering the plan preview
-      if (next === 4 && dir === "forward") {
+      // Initialize task setups when entering the plan preview (step 5)
+      if (next === 5 && dir === "forward") {
         initializeTaskSetups();
       }
       setDirection(dir);
@@ -1173,21 +1262,35 @@ export default function OnboardingPage() {
   const next = useCallback(() => goTo(step + 1, "forward"), [goTo, step]);
   const back = useCallback(() => goTo(step - 1, "backward"), [goTo, step]);
 
-  const handleFinish = () => {
-    startTransition(async () => {
-      const activeSystems = SYSTEMS
-        .filter((s) => form.systems[s.key].enabled)
-        .flatMap((s) => {
-          const subtypes = form.systems[s.key].subtypes;
-          if (subtypes.length === 0) {
-            return [{ key: s.mappedType, subtype: "standard" }];
-          }
-          return subtypes.map((st) => ({ key: s.mappedType, subtype: st }));
-        });
+  // Convert unified selectedItems back to separate systems and appliances for the API
+  const buildApiPayload = useCallback(() => {
+    const systems: { key: string; subtype: string }[] = [];
+    const appliances: string[] = [];
 
-      const activeAppliances = APPLIANCES
-        .filter((a) => form.appliances[a.key])
-        .map((a) => a.mappedCategory);
+    for (const group of HOME_ITEM_GROUPS) {
+      for (const item of group.items) {
+        const selection = form.selectedItems[item.key];
+        if (!selection?.enabled) continue;
+        if (item.type === "system" && item.mappedSystem) {
+          const subtypes = selection.subtypes.length > 0 ? [...selection.subtypes] : ["standard"];
+          if (selection.otherSubtype) subtypes.push(selection.otherSubtype);
+          for (const st of subtypes) {
+            systems.push({ key: item.mappedSystem, subtype: st });
+          }
+        } else if (item.type === "appliance" && item.mappedAppliance) {
+          appliances.push(item.mappedAppliance);
+        }
+      }
+    }
+
+    const householdHealth = Object.values(form.healthFlags).some(Boolean) ? form.healthFlags : undefined;
+
+    return { systems, appliances, householdHealth };
+  }, [form]);
+
+  const handleFinish = useCallback(() => {
+    startTransition(async () => {
+      const { systems, appliances, householdHealth } = buildApiPayload();
 
       const taskSetupsList = Object.values(taskSetups).map((s) => ({
         templateId: s.templateId,
@@ -1211,9 +1314,10 @@ export default function OnboardingPage() {
               state: form.state,
               climateZone: CLIMATE_ZONES[form.state] ?? "",
             },
-            systems: activeSystems,
-            appliances: activeAppliances,
+            systems,
+            appliances,
             taskSetups: taskSetupsList,
+            householdHealth,
           }),
         });
 
@@ -1225,7 +1329,43 @@ export default function OnboardingPage() {
 
       router.push("/dashboard");
     });
-  };
+  }, [buildApiPayload, form, taskSetups, router, startTransition]);
+
+  // Skip to end: submit with whatever data is collected so far
+  const handleSkipToEnd = useCallback(() => {
+    startTransition(async () => {
+      const { systems, appliances, householdHealth } = buildApiPayload();
+
+      try {
+        const res = await fetch("/api/onboarding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            home: {
+              name: form.name.trim() || "My Home",
+              type: form.type || "single_family",
+              ownerRole: form.ownerRole,
+              yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : null,
+              sqft: form.sqft ? Number(form.sqft) : null,
+              zip: form.zip,
+              state: form.state,
+              climateZone: CLIMATE_ZONES[form.state] ?? "",
+            },
+            systems,
+            appliances,
+            taskSetups: [],
+            householdHealth,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Failed to save");
+      } catch {
+        console.error("Failed to save onboarding data");
+      }
+
+      router.push("/dashboard");
+    });
+  }, [buildApiPayload, form, router, startTransition]);
 
   const translateClass = animating
     ? direction === "forward"
@@ -1233,8 +1373,8 @@ export default function OnboardingPage() {
       : "opacity-0 -translate-x-8"
     : "opacity-100 translate-x-0";
 
-  // Map step numbers: step 1 = welcome (no progress), steps 2-4 = wizard steps 1-3
-  const wizardStep = step - 1; // 0 for welcome, 1-3 for wizard
+  // Map step numbers: step 1 = welcome (no progress), steps 2-5 = wizard steps 1-4
+  const wizardStep = step - 1; // 0 for welcome, 1-4 for wizard
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#fafaf9]">
@@ -1248,7 +1388,7 @@ export default function OnboardingPage() {
       <div className={`flex flex-1 flex-col max-w-lg mx-auto w-full px-5 py-6 transition-all duration-200 ease-out ${translateClass}`}>
         {step === 1 && <StepWelcome onNext={next} />}
         {step === 2 && (
-          <StepBasicsAndLocation
+          <StepAboutHome
             data={form}
             onChange={updateForm}
             onNext={next}
@@ -1257,21 +1397,33 @@ export default function OnboardingPage() {
           />
         )}
         {step === 3 && (
-          <StepSystemsAndAppliances
+          <StepWhatsInYourHome
             data={form}
             onChange={updateForm}
             onNext={next}
             onBack={back}
+            onSkip={handleSkipToEnd}
             currentStep={wizardStep}
           />
         )}
         {step === 4 && (
+          <StepHousehold
+            data={form}
+            onChange={updateForm}
+            onNext={next}
+            onBack={back}
+            onSkip={handleSkipToEnd}
+            currentStep={wizardStep}
+          />
+        )}
+        {step === 5 && (
           <StepPlanPreview
             form={form}
             taskSetups={taskSetups}
             onUpdateTask={updateTaskSetup}
             onBack={back}
             onFinish={handleFinish}
+            onSkip={handleSkipToEnd}
             isPending={isPending}
             currentStep={wizardStep}
           />
