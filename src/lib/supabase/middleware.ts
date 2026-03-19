@@ -63,15 +63,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect app routes — redirect to landing if not signed in
-  const isAppRoute =
-    request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/tasks") ||
-    request.nextUrl.pathname.startsWith("/home-profile") ||
-    request.nextUrl.pathname.startsWith("/settings") ||
-    request.nextUrl.pathname.startsWith("/onboarding");
+  // Protect all routes by default — only allow listed public routes without auth
+  const isPublicRoute =
+    request.nextUrl.pathname === "/";
 
-  if (!user && isAppRoute) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);
