@@ -41,6 +41,15 @@ export type HealthCategory =
   | "pest_free"
   | "injury_prevention";
 
+export type HealthFlagKey =
+  | "hasAllergies"
+  | "hasYoungChildren"
+  | "hasPets"
+  | "hasElderly"
+  | "hasImmunocompromised"
+  | "prioritizeAirQuality"
+  | "prioritizeEnergyEfficiency";
+
 export interface TaskTemplate {
   id: string;
   name: string;
@@ -60,6 +69,8 @@ export interface TaskTemplate {
   healthCategories: HealthCategory[];
   tips: string | null;
   whyItMatters: string | null;
+  healthMultipliers: Partial<Record<HealthFlagKey, number>>;
+  healthRequired: HealthFlagKey[];
 }
 
 const ALL_DETACHED: HomeType[] = ["single_family", "townhouse", "multi_family", "mobile_home", "vacation_home", "rental_property"];
@@ -91,6 +102,8 @@ const hvacTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air"],
     tips: "If you have pets, allergies, or live in a dusty area, replace every 1-2 months instead. MERV 8-11 filters are a good balance of filtration and airflow for most homes. Write the date on the filter edge with a marker.",
     whyItMatters: "A clogged filter forces your system to work harder, increasing energy bills by 5-15%. It also leads to poor air quality and can shorten your HVAC system's lifespan by years.",
+    healthMultipliers: { hasAllergies: 0.5, hasPets: 0.5 },
+    healthRequired: [],
   },
   {
     id: "hvac-tuneup-heating",
@@ -111,6 +124,8 @@ const hvacTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air"],
     tips: "Book in September before the rush. Many HVAC companies offer service plans that include two tune-ups per year at a discount. Ask them to check for carbon monoxide leaks.",
     whyItMatters: "Annual tune-ups catch small problems before they become emergency repairs in the middle of winter. A well-maintained furnace lasts 15-20 years versus 10-12 without maintenance.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "hvac-tuneup-cooling",
@@ -131,6 +146,8 @@ const hvacTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air"],
     tips: "Book in March or April. The technician should check refrigerant levels, clean the evaporator coil, and test the thermostat calibration.",
     whyItMatters: "Low refrigerant or a dirty evaporator coil can increase cooling costs by 20-30% and lead to compressor failure — a $2,000-5,000 repair.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "hvac-clean-condenser",
@@ -151,6 +168,8 @@ const hvacTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air"],
     tips: "Turn off the unit at the breaker first. Keep at least 2 feet of clearance around the unit year-round. Never use a pressure washer — it will bend the fins.",
     whyItMatters: "A dirty condenser has to work much harder to release heat, significantly increasing energy costs and reducing the lifespan of the compressor.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "hvac-condensate-drain",
@@ -171,6 +190,8 @@ const hvacTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention"],
     tips: "The drain line is usually a PVC pipe near your indoor unit. Pour 1 cup of vinegar into the access point. If you see water stains on the ceiling below your unit, the drain may already be clogged.",
     whyItMatters: "A clogged condensate drain is the #1 cause of water damage from HVAC systems. It can ruin ceilings, walls, and flooring — repairs often run $1,000-5,000+.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "hvac-duct-cleaning",
@@ -191,6 +212,8 @@ const hvacTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air"],
     tips: "Get quotes from at least 3 companies. Beware of $99 whole-house deals — reputable companies charge $300-600. Ask if they use negative pressure equipment. Check NADCA certification.",
     whyItMatters: "Dirty ducts circulate dust, allergens, and potentially mold throughout your home. If anyone in your household has allergies or asthma, this is especially important.",
+    healthMultipliers: { hasAllergies: 0.5, prioritizeAirQuality: 0.5 },
+    healthRequired: [],
   },
   {
     id: "hvac-thermostat-batteries",
@@ -211,6 +234,8 @@ const hvacTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Most thermostats use AA or AAA batteries. Smart thermostats with C-wires may not need batteries. If your thermostat display is dim or blank, batteries are likely dead.",
     whyItMatters: "Dead thermostat batteries mean no heat or AC. This often happens at the worst time — during extreme temperatures when the system is running hard.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "hvac-inspect-ductwork",
@@ -231,6 +256,8 @@ const hvacTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air"],
     tips: "Turn the system on and feel for air escaping at joints. Look for duct tape (ironically, it fails on ducts) — metal tape or mastic sealant is what should be used. Seal any leaks you find with foil-backed tape.",
     whyItMatters: "Leaky ducts can waste 20-30% of your heating and cooling energy. That translates to hundreds of dollars per year in wasted utility costs.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -258,6 +285,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Attach a garden hose to the drain valve at the bottom of the tank and run it outside or to a floor drain. Turn off the gas/power first. Let the water run until it's clear. If sediment is caked, you may need to partially fill and drain several times.",
     whyItMatters: "Sediment insulates the bottom of the tank from the burner, making it work harder and eventually causing premature tank failure. A new water heater costs $800-2,500 installed.",
+    healthMultipliers: { hasYoungChildren: 0.75 },
+    healthRequired: [],
   },
   {
     id: "plumbing-test-tpr-valve",
@@ -278,6 +307,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Place a bucket under the discharge pipe first. Lift the lever briefly — you should hear water flow. If it doesn't release water, or continues dripping after you release, the valve needs replacement ($20 part, easy DIY or ~$150 for a plumber).",
     whyItMatters: "The TPR valve is a critical safety device. If it fails and pressure builds up in the tank, the water heater can literally explode. This is not theoretical — it happens.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "plumbing-check-toilets",
@@ -298,6 +329,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "A leaking flapper wastes 200+ gallons of water per day. Replacement flappers cost $5-10 at any hardware store and take 5 minutes to install. Also check for water around the base — this indicates a failed wax ring.",
     whyItMatters: "A silent toilet leak can waste 6,000+ gallons per month, adding $50-100+ to your water bill. A failed wax ring can rot your subfloor — a much more expensive repair.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "plumbing-clean-aerators",
@@ -318,6 +351,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Use pliers with a cloth to avoid scratching the finish. If the aerator is stuck, wrap it in a vinegar-soaked rag for 30 minutes first. If the screen is damaged, replacements are $3-5.",
     whyItMatters: "Clogged aerators reduce water pressure and can cause faucets to spray erratically. They also harbor bacteria if mineral deposits build up.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "plumbing-inspect-washer-hoses",
@@ -338,6 +373,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Rubber hoses should be replaced every 3-5 years regardless of appearance. Braided stainless steel hoses last much longer. Turn off supply valves when going on vacation.",
     whyItMatters: "Washing machine hose failure is the #2 cause of residential water damage (after frozen pipes). A burst hose can release 500+ gallons per hour into your home.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "plumbing-drain-treatment",
@@ -358,6 +395,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Use enzyme-based treatments (Bio-Clean, Green Gobbler), not chemical drain cleaners like Drano — those corrode pipes. Pour it before bed so it can sit overnight. Also pull out pop-up stoppers and remove hair/soap buildup.",
     whyItMatters: "Preventive treatment is much cheaper than emergency drain clearing ($200-500 per visit). Recurring clogs can also indicate deeper sewer line issues.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "plumbing-insulate-pipes",
@@ -378,6 +417,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention"],
     tips: "Foam pipe insulation is cheap ($0.50-2 per 6ft section) and just slips on. Pay special attention to pipes near exterior walls, in the attic, and in the garage. On extremely cold nights, also let faucets drip slightly.",
     whyItMatters: "A single burst pipe can cause $5,000-70,000 in water damage. Pipe insulation is one of the cheapest and most effective home protections you can add.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "plumbing-test-sump-pump",
@@ -398,6 +439,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Test before the rainy season. Check that the discharge pipe exits away from your foundation. Consider a battery backup sump pump — power outages often coincide with storms. Also check the check valve to ensure water doesn't flow back.",
     whyItMatters: "If your sump pump fails during heavy rain, your basement can flood within hours. The average basement flood costs $20,000-50,000 in damage and remediation.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "plumbing-pump-septic",
@@ -418,6 +461,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Know where your tank lid is and keep it accessible. Frequency depends on household size — a family of 4 may need pumping every 2-3 years, a couple every 4-5. Keep a record of pumping dates and condition reports.",
     whyItMatters: "An overflowing septic tank can back up into your home or contaminate groundwater. Septic system replacement costs $10,000-30,000. Regular pumping extends the drain field life by decades.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "plumbing-check-water-pressure",
@@ -438,6 +483,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "A pressure gauge costs about $8 at any hardware store and screws onto any hose bib. If pressure exceeds 80 PSI, you need a pressure reducing valve. If it's below 40 PSI, check for leaks or contact your water utility.",
     whyItMatters: "High water pressure (above 80 PSI) stresses pipes, fittings, and appliance connections, leading to leaks and premature failure. It also wastes water and energy.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "plumbing-test-well-water",
@@ -458,6 +505,8 @@ const plumbingTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Test in spring when contamination risk is highest from snowmelt. At minimum test for coliform bacteria and nitrates. Contact your county health department — many offer free or low-cost testing. Test more frequently if near agriculture or industry.",
     whyItMatters: "Well water is not regulated by the EPA — you are responsible for its safety. Contaminated well water can cause serious illness, especially for children, elderly, and immunocompromised individuals.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -485,6 +534,8 @@ const electricalTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "GFCI outlets protect against electrocution near water. If a GFCI won't trip or reset, it needs replacement immediately — this is a $15 part and a straightforward job for someone comfortable with electrical work, or about $100-150 for an electrician.",
     whyItMatters: "GFCI outlets prevent electrocution deaths. The CPSC estimates they prevent 70% of residential electrocution fatalities. A non-functional GFCI provides zero protection.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "electrical-test-afci",
@@ -505,6 +556,8 @@ const electricalTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "AFCI breakers are typically found in bedrooms and living areas (required by code since 1999 in bedrooms, expanded since 2014). If a breaker won't test, have an electrician evaluate it.",
     whyItMatters: "AFCI breakers detect electrical arcs that can cause house fires. Arcing faults are a leading cause of residential electrical fires. Testing ensures this critical safety device actually works.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "electrical-inspect-panel",
@@ -525,6 +578,8 @@ const electricalTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "DO NOT touch anything inside the panel — just look. If you see any discoloration, smell burning, or hear buzzing, call an electrician immediately. Take a photo of your panel's breaker labels so you have them on your phone.",
     whyItMatters: "Electrical panel issues cause thousands of house fires annually. Certain panels (Federal Pacific, Zinsco) are known fire hazards and should be replaced regardless of appearance.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "electrical-replace-surge-protectors",
@@ -545,6 +600,8 @@ const electricalTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Check if the protection indicator light is still on. Many surge protectors continue to function as power strips after protection has worn out, giving a false sense of security. Invest in whole-house surge protection ($200-500 installed) for comprehensive coverage.",
     whyItMatters: "After absorbing multiple surges, protectors stop protecting — but still deliver power. One lightning strike or power grid surge can fry thousands of dollars in electronics and appliances.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "electrical-check-outdoor-lighting",
@@ -565,6 +622,8 @@ const electricalTemplates: TaskTemplate[] = [
     healthCategories: ["injury_prevention"],
     tips: "Switch to LED bulbs for 80% energy savings and 15-25 year lifespan. Check that motion sensor lights activate properly. Clean fixtures with a damp cloth to improve brightness. Verify timers/photocells are working.",
     whyItMatters: "Exterior lighting is a primary deterrent against break-ins. Poorly lit walkways are also a fall hazard — especially important for guests and elderly family members.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -592,6 +651,8 @@ const safetyTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "You should have detectors in every bedroom, outside each sleeping area, and on every level. If a detector chirps intermittently, it needs new batteries. If it chirps after new batteries, it may need replacement.",
     whyItMatters: "Working smoke detectors cut the risk of dying in a home fire in half. Three out of five fire deaths occur in homes without working smoke alarms.",
+    healthMultipliers: { hasYoungChildren: 0.5, hasElderly: 0.5 },
+    healthRequired: [],
   },
   {
     id: "safety-replace-smoke-batteries",
@@ -612,6 +673,8 @@ const safetyTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "Do this when daylight saving time ends — easy to remember. Use name-brand batteries. Some newer detectors have sealed 10-year lithium batteries that don't need annual replacement — check your model.",
     whyItMatters: "Dead batteries are the most common reason smoke detectors fail to alert during a fire. Most fire deaths occur between 11 PM and 7 AM when people are sleeping.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "safety-replace-smoke-detectors",
@@ -632,6 +695,8 @@ const safetyTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "For best protection, use both ionization (fast-flaming fires) and photoelectric (smoldering fires) detectors, or dual-sensor units. Smart detectors (Nest Protect, Kidde) can send alerts to your phone.",
     whyItMatters: "Smoke detectors lose sensitivity over time. After 10 years, they may not detect smoke reliably. The sensor degrades even if the detector appears to work during testing.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "safety-test-co-detectors",
@@ -652,6 +717,8 @@ const safetyTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air"],
     tips: "CO detectors should be on every level and near sleeping areas. CO is heavier than air, so don't mount too high. If you have a gas furnace, water heater, or attached garage, CO detectors are essential. Replace CO detectors every 5-7 years.",
     whyItMatters: "Carbon monoxide is colorless and odorless — you cannot detect it without a working alarm. Over 400 Americans die annually from accidental CO poisoning, and 50,000+ visit the ER.",
+    healthMultipliers: { hasYoungChildren: 0.5, hasElderly: 0.5 },
+    healthRequired: [],
   },
   {
     id: "safety-check-fire-extinguishers",
@@ -672,6 +739,8 @@ const safetyTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "Keep extinguishers in the kitchen, garage, and near the laundry room at minimum. Everyone in the household should know the PASS technique: Pull pin, Aim low, Squeeze handle, Sweep side to side.",
     whyItMatters: "A small fire can become unsurvivable in under 2 minutes. Having a working extinguisher in reach means the difference between a scare and a disaster.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "safety-replace-fire-extinguishers",
@@ -692,6 +761,8 @@ const safetyTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "Rechargeable (metal valve) extinguishers can be professionally serviced every 6 years and hydrostatically tested every 12 years. Disposable (plastic valve) should just be replaced. Check the tag for the manufacture or service date.",
     whyItMatters: "Extinguisher chemicals settle and compact over time, potentially preventing the unit from working when needed. An extinguisher that doesn't discharge is useless in an emergency.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "safety-clean-dryer-vent",
@@ -712,6 +783,8 @@ const safetyTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air", "fire_safety"],
     tips: "Buy a dryer vent brush kit ($15-25). If your duct run is long or has many bends, hire a professional ($100-170). Warning signs of a clogged vent: clothes take multiple cycles to dry, the top of the dryer is very hot, you smell burning. Replace flexible foil ducts with rigid or semi-rigid metal.",
     whyItMatters: "Dryer fires cause 2,900 house fires and 5 deaths annually in the US. Lint buildup in the vent duct is the leading cause. This is one of the most important maintenance tasks you can do.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "safety-test-radon",
@@ -732,6 +805,8 @@ const safetyTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air"],
     tips: "Test in winter when windows are typically closed. Test kits are available from your state radon office (often free) or hardware stores ($12-30). If results are 4 pCi/L or higher, install a radon mitigation system ($800-1,500).",
     whyItMatters: "Radon is the #2 cause of lung cancer after smoking. It's a naturally occurring radioactive gas that seeps through foundation cracks. 1 in 15 US homes has elevated radon.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -759,6 +834,8 @@ const roofGutterTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention", "pest_free"],
     tips: "Use a gutter scoop and garden hose. Check that downspouts discharge at least 4-6 feet from the foundation. Consider gutter guards if you have many trees — they reduce but don't eliminate cleaning. Professional cleaning runs $150-250 for most homes.",
     whyItMatters: "Clogged gutters cause water to overflow against the foundation, leading to basement flooding, foundation damage, and fascia rot. Ice dams in winter can damage roofing and cause interior leaks.",
+    healthMultipliers: { hasAllergies: 0.75 },
+    healthRequired: [],
   },
   {
     id: "roof-inspect-roof",
@@ -779,6 +856,8 @@ const roofGutterTemplates: TaskTemplate[] = [
     healthCategories: ["injury_prevention"],
     tips: "Use binoculars from the ground for safety. Also check after major storms. Look for dark streaks (algae), granules in gutters (shingle wear), and any moss growth. A professional inspection costs $200-400 and is worth it every few years or before warranty claims.",
     whyItMatters: "A small roof leak can cause thousands in hidden damage to insulation, framing, drywall, and can lead to mold growth. Catching problems early means a $200 repair instead of a $15,000 replacement.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "roof-check-flashing",
@@ -799,6 +878,8 @@ const roofGutterTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Most roof leaks originate at flashing points, not the field of shingles. If you see caulk that's cracked or peeling, it needs to be redone. Flashing repairs are typically $200-500 — much cheaper than water damage repairs.",
     whyItMatters: "Flashing is the most vulnerable point on any roof. Failed flashing accounts for the majority of roof leaks and the water damage that follows.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "roof-trim-overhanging-branches",
@@ -819,6 +900,8 @@ const roofGutterTemplates: TaskTemplate[] = [
     healthCategories: ["pest_free", "injury_prevention"],
     tips: "Branches touching the roof abrade shingles and provide a highway for pests. Large branches near the house are a risk in storms. For large trees or branches near power lines, hire a certified arborist ($300-2,000+ depending on the job).",
     whyItMatters: "Falling branches during storms are a major cause of roof damage and insurance claims. Overhanging branches also drop debris that clogs gutters and promotes moss growth.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "roof-inspect-attic",
@@ -839,6 +922,8 @@ const roofGutterTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air", "mold_prevention", "pest_free"],
     tips: "Check after heavy rains. Look for black mold on roof sheathing — this indicates chronic moisture. Ensure bathroom exhaust fans vent outside, not into the attic. Check that soffit vents aren't blocked by insulation.",
     whyItMatters: "Attic moisture problems lead to mold, rotted framing, and ruined insulation. These issues are invisible from outside and can develop into major structural and health problems.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
 ];
 
@@ -866,6 +951,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Use 1,500-2,000 PSI for vinyl siding, lower for wood. Keep the nozzle 12+ inches from the surface. Never aim up under siding — water will get behind it. Rent a power washer for $50-100/day, or hire a pro for $200-400.",
     whyItMatters: "Beyond curb appeal, mildew and algae growth can degrade siding over time. Clean siding also makes it easier to spot damage that needs repair.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "exterior-power-wash-hardscape",
@@ -886,6 +973,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: ["injury_prevention"],
     tips: "Use 3,000+ PSI for concrete. A surface cleaner attachment ($30-60) makes driveways much faster and more uniform than a wand. Pre-treat oil stains with degreaser. For pavers, re-sand joints after washing.",
     whyItMatters: "Mold, mildew, and algae on walkways create a slip hazard. Organic growth can also work into concrete cracks and accelerate deterioration.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "exterior-recaulk",
@@ -906,6 +995,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention"],
     tips: "Use silicone or polyurethane caulk for exterior — it stays flexible. Don't caulk the bottom of window frames — that's a weep channel for moisture escape. Apply on a dry day above 40°F. A caulk gun and tube costs under $15.",
     whyItMatters: "Failed caulk lets water behind siding and into wall cavities, causing rot, mold, and insulation damage that's expensive to repair and invisible until advanced.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "exterior-touch-up-paint",
@@ -926,6 +1017,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Keep a record of your paint colors and brands. Focus on south and west-facing surfaces which get the most sun damage. Always prime bare wood before painting. Don't paint in direct sunlight or below 50°F.",
     whyItMatters: "Paint is your home's first defense against moisture. Exposed wood absorbs water and rots quickly. Touching up annually prevents the need for a full $5,000-15,000 exterior repaint.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "exterior-check-grading",
@@ -946,6 +1039,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention"],
     tips: "Soil settles over time, especially around new construction. Add topsoil to low spots and grade away from the house. Don't pile soil above the siding line. Also check that downspout extensions direct water well away from the foundation.",
     whyItMatters: "Improper grading is the #1 cause of wet basements and foundation problems. Water pooling against the foundation leads to cracks, leaks, and structural damage over time.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "exterior-inspect-foundation",
@@ -966,6 +1061,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention", "pest_free", "injury_prevention"],
     tips: "Hairline cracks are normal. Horizontal cracks, stair-step cracks in block, or cracks wider than 1/4 inch need professional evaluation. Take photos and monitor — if cracks are growing, act quickly. Seal small cracks with hydraulic cement ($10).",
     whyItMatters: "Foundation issues are among the most expensive home repairs ($5,000-30,000+). Catching them early when they're small cracks can save tens of thousands versus waiting until walls are bowing.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "exterior-seal-deck",
@@ -986,6 +1083,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention", "injury_prevention"],
     tips: "Test if your deck needs sealing: sprinkle water on it. If it beads up, the seal is still good. If it soaks in, it's time. Let the deck dry 24-48 hours after washing before applying sealer. Apply on a cloudy day to avoid lap marks.",
     whyItMatters: "Unsealed wood decks absorb water, leading to rot, warping, and structural failure. A deck replacement costs $5,000-20,000+. Annual sealing preserves both safety and value.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "exterior-inspect-fence",
@@ -1006,6 +1105,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: ["injury_prevention"],
     tips: "Wood posts rot at ground level first — poke with a screwdriver to check for soft spots. A single post replacement is $100-300. Tighten loose hardware on gates. Clear soil and debris away from the bottom of fence panels.",
     whyItMatters: "One rotted post can cause an entire fence section to collapse, especially in wind. Catching rot early means replacing one post instead of rebuilding a whole section.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "exterior-seal-driveway",
@@ -1026,6 +1127,8 @@ const exteriorTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Fill cracks with crack filler before sealing. Apply on a warm day (50°F+) with no rain expected for 24 hours. Two thin coats are better than one thick coat. A DIY 5-gallon bucket covers about 400 sq ft and costs $15-30. Professional sealing runs $300-600.",
     whyItMatters: "Water seeps into asphalt cracks, freezes, and expands — turning small cracks into potholes. A full driveway replacement costs $3,000-8,000. Sealcoating every 2-3 years can double the driveway's lifespan.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -1053,6 +1156,8 @@ const windowDoorTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Close a dollar bill in the door — if it slides out easily, the weatherstripping needs replacement. Self-adhesive foam tape is the easiest fix. V-strip and door sweeps are more durable. Check the bottom of garage doors too.",
     whyItMatters: "Air leaks around doors and windows can account for 25-30% of heating and cooling costs. Good weatherstripping pays for itself within one season.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "windows-lubricate-hardware",
@@ -1073,6 +1178,8 @@ const windowDoorTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Use graphite powder or silicone spray for locks — NOT WD-40, which attracts dust and gums up over time. For hinges, a drop of 3-in-1 oil on each pin works great. Lift the hinge pin slightly to apply.",
     whyItMatters: "Stiff locks can break keys off inside the cylinder — an expensive locksmith call. Squeaky hinges are annoying, but neglected hinges can also wear out the door frame.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "windows-clean-weep-holes",
@@ -1093,6 +1200,8 @@ const windowDoorTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention"],
     tips: "Weep holes are small slots or holes on the outside bottom of window frames — they let trapped water drain out. Don't seal them. If you can't find them, check your window manufacturer's documentation.",
     whyItMatters: "Blocked weep holes trap water inside the window frame, leading to wood rot, mold growth, and eventual window failure. Window replacement runs $300-1,000+ per window.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "windows-repair-screens",
@@ -1113,6 +1222,8 @@ const windowDoorTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Small holes can be patched with screen repair patches ($5 for a pack). For larger tears, re-screening a frame costs $5-15 in materials and takes 20 minutes with a spline roller. Most hardware stores will re-screen for you for $10-20 per screen.",
     whyItMatters: "Damaged screens let in mosquitoes, flies, and other pests. They also reduce your home's curb appeal and can affect resale value.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -1140,6 +1251,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Unplug the fridge first. Coils are usually behind a removable panel on the bottom front or on the back. Use a coil cleaning brush ($8) or vacuum with a crevice attachment. If you have pets, do this every 3 months — pet hair clogs coils fast.",
     whyItMatters: "Dusty coils make the compressor work up to 25% harder, shortening its life and increasing energy costs by $100+/year. The compressor is the most expensive part — $500-1,000 to replace.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-fridge-water-filter",
@@ -1160,6 +1273,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Note your filter model number — it's usually printed on the existing filter. Aftermarket filters are often half the price of OEM and work fine. Run 2-3 gallons through a new filter before drinking the water.",
     whyItMatters: "An old filter loses effectiveness and can actually harbor bacteria. Water taste and quality deteriorate, and the ice maker may produce smaller or cloudy ice.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-fridge-door-seals",
@@ -1180,6 +1295,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Close the door on a dollar bill — if it slides out easily, the seal is worn. Clean sticky or dirty seals with warm water and baking soda. Apply a thin layer of petroleum jelly to keep seals supple. Replacement gaskets cost $50-150.",
     whyItMatters: "A leaking door seal forces the compressor to run constantly, dramatically increasing energy costs and wearing out the compressor faster.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-dishwasher-filter",
@@ -1200,6 +1317,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "The filter is usually a twist-and-pull cylinder at the bottom of the tub. Most modern dishwashers have a manual filter (older ones had self-cleaning grinders). If dishes are coming out gritty or smelly, the filter is likely overdue.",
     whyItMatters: "A clogged filter means food particles recirculate onto your \"clean\" dishes. It also strains the pump motor and can cause drainage issues and bad odors.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-dishwasher-clean-cycle",
@@ -1220,6 +1339,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "You can also use dishwasher cleaning tablets (Affresh, Finish). Clean the spray arm holes with a toothpick if you notice reduced water pressure. Wipe down the door edges and rubber gasket — these areas don't get cleaned during cycles.",
     whyItMatters: "Mineral deposits, grease, and food residue build up inside the dishwasher, reducing cleaning effectiveness and eventually clogging spray arms and the drain.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-washer-clean",
@@ -1240,6 +1361,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention"],
     tips: "Front-loaders are especially prone to mold and mildew. Always leave the door ajar after use to let it dry. Pull back the rubber gasket on front-loaders and wipe out trapped moisture and debris. Don't use too much detergent — it causes buildup.",
     whyItMatters: "Mold and mildew in washing machines transfer to your clothes, causing musty odors. In front-loaders, mold behind the gasket can become a health concern.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "appliance-washer-door-seal",
@@ -1260,6 +1383,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: ["mold_prevention"],
     tips: "Clean mold with a solution of equal parts water and vinegar or a dilute bleach solution. Small items (socks, baby clothes) often get trapped behind the gasket. If the gasket is torn or no longer seals, replacement costs $150-300 in parts.",
     whyItMatters: "A damaged door seal causes leaks during wash cycles, potentially damaging your floor. Mold behind the gasket is a common source of musty-smelling laundry.",
+    healthMultipliers: { hasImmunocompromised: 0.5, hasAllergies: 0.5 },
+    healthRequired: [],
   },
   {
     id: "appliance-dryer-deep-clean",
@@ -1280,6 +1405,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: ["fire_safety"],
     tips: "Use a long, narrow vacuum attachment or a dryer lint brush ($8) to reach deep into the housing. If your lint screen has fabric softener residue (run water over it — if water pools, it has residue), scrub with hot soapy water and a brush.",
     whyItMatters: "Lint that bypasses the trap accumulates in the housing and around the heating element — a direct fire hazard. This supplements but doesn't replace annual vent duct cleaning.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-disposal-clean",
@@ -1300,6 +1427,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Never put grease, fibrous vegetables (celery, artichokes), or pasta/rice (they expand) down the disposal. Always run cold water when operating the disposal. If it's jammed, use the hex wrench that came with it (usually fits a hole on the bottom).",
     whyItMatters: "A neglected garbage disposal develops odors from bacterial buildup on food residue. Infrequent use can also cause the impellers to seize from corrosion.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-range-hood-filter",
@@ -1320,6 +1449,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: ["clean_air", "fire_safety"],
     tips: "For metal mesh filters, soak in very hot water with degreasing dish soap or boil with baking soda. Charcoal/carbon filters cannot be cleaned — replace them. If you cook frequently with oil, clean monthly.",
     whyItMatters: "A grease-clogged range hood filter is ineffective at removing cooking fumes and is also a fire hazard. Grease buildup can ignite from heat below.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-water-softener-salt",
@@ -1340,6 +1471,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Use solar or evaporated salt pellets — avoid rock salt which leaves more residue. Don't overfill past 2/3. If you see a hard crust (salt bridge) above the water line, break it up with a broom handle. Check that the salt isn't mushing into a solid mass at the bottom.",
     whyItMatters: "Without salt, the softener can't regenerate and your water goes hard. Hard water causes scale buildup in pipes and appliances, reducing their efficiency and lifespan significantly.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-water-softener-clean",
@@ -1360,6 +1493,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Let the salt level run low before cleaning to make it easier. Scrub with warm water and dish soap. Rinse thoroughly. Check the brine well tube and float valve while you're in there.",
     whyItMatters: "Sediment, dirt, and insoluble salt residue accumulate at the bottom of the brine tank, reducing regeneration efficiency and potentially fouling the resin bed.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "appliance-water-filter-replace",
@@ -1380,6 +1515,8 @@ const applianceTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Turn off the water supply before changing the filter. Keep a spare filter on hand so you can replace immediately when needed. Note your filter size and type — they're not interchangeable. Lubricate the O-ring with food-grade silicone when reassembling.",
     whyItMatters: "An exhausted filter stops removing contaminants and can actually release trapped particles back into your water. Severely clogged filters also reduce water pressure throughout the house.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -1407,6 +1544,8 @@ const lawnTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Get a soil test first ($15-30 through your county extension office) to know what nutrients you actually need. More is NOT better — over-fertilizing burns grass and pollutes waterways. Water within 24 hours of application. Apply in the morning or evening, never in the heat of the day.",
     whyItMatters: "Proper fertilization promotes dense, healthy grass that naturally crowds out weeds and resists disease and drought, reducing the need for herbicides and extra watering.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "lawn-aerate",
@@ -1427,6 +1566,8 @@ const lawnTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Rent a core aerator from a home improvement store ($70-90/day) — spike aerators don't work nearly as well. Mark sprinkler heads and shallow utility lines first. Water the lawn the day before to soften the soil. Leave the soil plugs on the lawn — they'll break down naturally.",
     whyItMatters: "Compacted soil prevents water, air, and nutrients from reaching grass roots. Aeration is the single most impactful thing you can do for lawn health after proper watering.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "lawn-irrigation-startup",
@@ -1447,6 +1588,8 @@ const lawnTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Open the main valve SLOWLY (quarter-turn at a time over 10 minutes) to avoid water hammer that can crack pipes. Walk each zone while it runs — look for geysers (broken heads), sunken heads, and dry spots. Adjust heads for coverage. Replace broken heads ($3-10 each).",
     whyItMatters: "Freeze damage from winter can crack pipes and heads. Discovering this early prevents water waste, landscape damage, and high water bills from undetected leaks.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "lawn-irrigation-winterize",
@@ -1467,6 +1610,8 @@ const lawnTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "You need an air compressor with at least 80 PSI and adequate CFM. Don't exceed 50 PSI for PVC systems or 80 PSI for polyethylene. Blow out each zone twice. Many irrigation companies offer winterization for $50-120 — worth it if you're not comfortable with compressors.",
     whyItMatters: "Water left in irrigation lines freezes and expands, cracking pipes and fittings. Repair costs typically run $200-1,000+ in spring, and you'll have no irrigation until it's fixed.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "lawn-mulch-beds",
@@ -1487,6 +1632,8 @@ const lawnTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Don't pile mulch against tree trunks (\"volcano mulching\") — it causes rot. Calculate needs: 1 cubic yard covers 100 sq ft at 3 inches deep. Bulk mulch delivered is much cheaper than bags ($30-50/yard delivered vs $4-5/bag). Edge beds first for a clean look.",
     whyItMatters: "Mulch suppresses weeds, retains soil moisture (reducing watering by 25-50%), moderates soil temperature, and adds organic matter as it decomposes.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "lawn-sharpen-mower",
@@ -1507,6 +1654,8 @@ const lawnTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Disconnect the spark plug before working on blades. Use a file or bench grinder. Balance the blade on a nail — if one side dips, sharpen that side more. New blades are $15-30 if sharpening isn't worth the effort. Many hardware stores offer sharpening for $10-15.",
     whyItMatters: "Dull blades tear grass instead of cutting it, leaving ragged brown tips that invite disease. A clean cut promotes denser, healthier growth and a better-looking lawn.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "lawn-trim-trees",
@@ -1527,6 +1676,8 @@ const lawnTemplates: TaskTemplate[] = [
     healthCategories: ["injury_prevention"],
     tips: "Prune in late winter when trees are dormant (except for spring-flowering trees — prune those right after blooming). Never hire anyone who suggests topping a tree — it's destructive and encourages weak growth. Get ISA-certified arborists. Get 3 quotes.",
     whyItMatters: "Dead branches are unpredictable and can fall on people, cars, or structures. Proper pruning also prevents disease spread, improves tree health, and reduces storm damage risk.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -1554,6 +1705,8 @@ const pestTemplates: TaskTemplate[] = [
     healthCategories: ["pest_free"],
     tips: "Many pest companies offer free inspections hoping to sell treatment. Get at least 2 opinions before committing to treatment. Look for mud tubes on foundations yourself — pencil-width tubes running from soil up the foundation wall. Termite damage is often NOT covered by homeowner's insurance.",
     whyItMatters: "Termites cause $5 billion in property damage annually in the US. An active colony can eat a linear foot of 2x4 in about 5 months. Damage is often hidden inside walls and undetected for years.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "pest-seal-entry-points",
@@ -1574,6 +1727,8 @@ const pestTemplates: TaskTemplate[] = [
     healthCategories: ["pest_free"],
     tips: "A mouse can fit through a hole the size of a dime. Check around pipes, cables, vents, and where siding meets the foundation. Use steel wool and caulk for small gaps (mice can't chew through steel wool). Use copper mesh for larger holes. Don't forget the garage door seal.",
     whyItMatters: "Prevention is far more effective and cheaper than extermination. Mice and rats can chew through wiring (fire hazard), contaminate food, and cause significant property damage.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "pest-mosquito-check",
@@ -1594,6 +1749,8 @@ const pestTemplates: TaskTemplate[] = [
     healthCategories: ["pest_free"],
     tips: "Mosquitoes only need a bottle cap of water to breed. Change bird bath water weekly. Add mosquito dunks (BTI) to ponds and rain barrels — they're safe for wildlife but kill larvae. Check spots after rain: tarps that collect water, low spots in yard, and clogged drainage.",
     whyItMatters: "Beyond being a nuisance, mosquitoes transmit West Nile virus, Zika, and other diseases. Reducing breeding sites is the most effective control method.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -1621,6 +1778,8 @@ const garageTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Use white lithium grease or silicone spray — NOT WD-40 (it's a solvent, not a lubricant). Spray the roller stems, hinge pivot points, and spring coils. Wipe excess from the tracks. NEVER attempt to adjust or replace the torsion springs yourself — they're under extreme tension and can kill.",
     whyItMatters: "A well-lubricated garage door operates quieter, puts less strain on the opener motor, and prevents premature wear on expensive components like springs ($200-400 to replace professionally).",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "garage-test-auto-reverse",
@@ -1641,6 +1800,8 @@ const garageTemplates: TaskTemplate[] = [
     healthCategories: ["injury_prevention"],
     tips: "Test the pressure reverse (2x4 test) and the photo-eye reverse (wave your foot through the beam). Both should cause immediate reversal. Clean the photo-eye lenses with a soft cloth if they're not working. If either test fails, do not use the door until it's repaired.",
     whyItMatters: "Garage doors weigh 150-400 pounds and exert hundreds of pounds of force. A door that doesn't auto-reverse can crush a child, pet, or person. This is a critical safety check.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "garage-replace-weather-seal",
@@ -1661,6 +1822,8 @@ const garageTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "The bottom seal slides into a channel on the bottom of the door — measure the width of the channel before buying. Side and top seals are usually adhesive-backed. If daylight is visible around the closed door, the seals need replacing.",
     whyItMatters: "Worn weather seals let in rain, snow, insects, and rodents. They also waste energy if you have a heated garage or rooms above it. Cold air infiltration affects the entire house.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -1688,6 +1851,8 @@ const poolTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Target pH: 7.2-7.6, Free chlorine: 1-3 ppm, Alkalinity: 80-120 ppm. Test strips are convenient but liquid test kits are more accurate. Test more frequently after heavy rain, heavy use, or extreme heat. Take a water sample to your pool store monthly for a comprehensive analysis.",
     whyItMatters: "Imbalanced pool water can cause skin and eye irritation, promote algae and bacteria growth, and damage pool surfaces and equipment. Low chlorine can allow dangerous pathogens.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "pool-clean-filter",
@@ -1708,6 +1873,8 @@ const poolTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Clean when filter pressure reads 8-10 PSI above the clean baseline. For cartridge filters, soak overnight in filter cleaner solution. Sand filters should be backwashed when pressure rises. Replace cartridges every 1-2 years depending on use.",
     whyItMatters: "A dirty filter can't clean the water effectively, leading to cloudy or green water and potential health hazards. It also forces the pump to work harder, increasing energy costs and wear.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "pool-open-season",
@@ -1728,6 +1895,8 @@ const poolTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Open when water temperature consistently stays above 60°F. Remove, clean, and properly store the cover. Inspect all equipment before turning on. Prime the pump before starting. Shock the pool with high chlorine. Run the pump 24 hours initially. A professional pool opening costs $200-400.",
     whyItMatters: "Proper opening prevents equipment damage and gets the water chemistry right from the start, avoiding weeks of fighting algae and cloudy water.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "pool-close-season",
@@ -1748,6 +1917,8 @@ const poolTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Balance chemistry before closing — it's much harder to fix in spring if wrong. Lower water below skimmer level. Blow out all plumbing lines with a shop vac or compressor and plug them. Remove and store pump drain plugs. Use a quality winter cover with a tight fit.",
     whyItMatters: "Water left in plumbing lines freezes and cracks pipes and fittings — repairs can cost $500-2,000+. Improper closing also leads to staining and an expensive, difficult opening in spring.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -1775,6 +1946,8 @@ const hotTubTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Target pH: 7.2-7.8, Alkalinity: 80-120 ppm, Bromine: 3-5 ppm or Chlorine: 1-3 ppm. Test before each use if used daily. Shock weekly with non-chlorine shock after heavy use.",
     whyItMatters: "Warm water breeds bacteria much faster than pool water. Improperly sanitized hot tubs can cause hot tub folliculitis, Legionnaire's disease, and other infections.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "hottub-clean-filter",
@@ -1795,6 +1968,8 @@ const hotTubTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Keep a spare filter so you can swap while the other soaks overnight. Replace filters every 12-18 months depending on use. Rinse weekly if you use the tub frequently.",
     whyItMatters: "A dirty filter can't sanitize effectively, leading to cloudy water and potential health issues. It also strains the pump motor.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "hottub-drain-refill",
@@ -1815,6 +1990,8 @@ const hotTubTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Use a hot tub plumbing flush product before draining to clean biofilm from the jets and pipes. Clean the shell while empty. Use a hose filter when refilling to reduce minerals. Balance chemistry before first use.",
     whyItMatters: "Over time, dissolved solids build up and make water harder to balance. Biofilm accumulates in plumbing lines. Fresh water every 3-4 months keeps the tub sanitary and extends equipment life.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "hottub-clean-cover",
@@ -1835,6 +2012,8 @@ const hotTubTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "A waterlogged cover gets extremely heavy and loses insulating ability. If the cover is noticeably heavier than when new, the foam cores are saturated and the cover needs replacement ($300-600). UV protectant extends cover life significantly.",
     whyItMatters: "The cover is the tub's primary insulator — a damaged cover can double heating costs. It also keeps debris and contaminants out of the water.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "hottub-clean-jets",
@@ -1855,6 +2034,8 @@ const hotTubTemplates: TaskTemplate[] = [
     healthCategories: ["clean_water"],
     tips: "Do this right before a drain-and-refill so the loosened biofilm gets drained away. If jets aren't spinning freely, they may need individual replacement ($10-30 each).",
     whyItMatters: "Biofilm — a slimy bacterial coating — builds up inside jet plumbing and is a major source of water contamination and odors in hot tubs.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
 ];
 
@@ -1882,6 +2063,8 @@ const seasonalTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Think of this as a post-winter damage assessment. Walk the entire exterior looking for winter damage: cracked foundations, lifted siding, ice dam damage. Check that downspouts drain away from foundation. Turn on outdoor faucets slowly and check for leaks from frozen pipes. This is a walkthrough — note issues and schedule repairs.",
     whyItMatters: "Winter weather causes more home damage than any other season. Catching problems in spring prevents them from worsening through the year. This is your annual reset.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "seasonal-summer-checkup",
@@ -1902,6 +2085,8 @@ const seasonalTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Check that your AC keeps up on the hottest days. Walk the yard in early morning looking for dry spots in the lawn (irrigation coverage issues). Check for pest activity — ants, wasps, termite swarmers. Make sure dryer vent flap opens and closes properly.",
     whyItMatters: "Summer heat stresses both your home and its systems. Mid-year checks catch problems before they become emergencies during peak heat.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "seasonal-fall-winterization",
@@ -1922,6 +2107,8 @@ const seasonalTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Disconnect and drain garden hoses. Close interior shut-off valves for outdoor faucets and open the outside faucet to drain. Set ceiling fans to clockwise (updraft). Check weather stripping. Stock ice melt, snow shovels, and emergency supplies. Know where your water shut-off is in case of a burst pipe.",
     whyItMatters: "The most expensive home emergencies happen in winter: frozen pipes, heating failures, ice dams. Thirty minutes of fall prep can prevent thousands in winter damage.",
+    healthMultipliers: {},
+    healthRequired: [],
   },
   {
     id: "seasonal-winter-storm-check",
@@ -1942,6 +2129,235 @@ const seasonalTemplates: TaskTemplate[] = [
     healthCategories: [],
     tips: "Emergency kit: flashlights, batteries, water (1 gallon per person per day for 3 days), non-perishable food, blankets, first aid kit, battery-powered radio, medications. Know how to shut off water, gas, and electricity. If you have a generator, test it and store fresh fuel. Know the signs of ice dams.",
     whyItMatters: "Winter storms can knock out power and heat for days. Being prepared isn't about fear — it's about protecting your family when systems fail. Thousands of families experience this every winter.",
+    healthMultipliers: {},
+    healthRequired: [],
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HEALTH-SPECIFIC TEMPLATES
+// ═══════════════════════════════════════════════════════════════════════════
+
+const healthTemplates: TaskTemplate[] = [
+  {
+    id: "health-check-humidity",
+    name: "Check Indoor Humidity Levels",
+    description: "Monitor indoor humidity to prevent mold growth and maintain comfortable air quality. Ideal range is 30-50%.",
+    category: "seasonal",
+    priority: "efficiency",
+    frequencyValue: 1,
+    frequencyUnit: "months",
+    estimatedMinutes: 5,
+    estimatedCostLow: null,
+    estimatedCostHigh: null,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: ["clean_air", "mold_prevention"],
+    tips: "Use a hygrometer to check humidity. If consistently above 50%, consider a dehumidifier.",
+    whyItMatters: "High humidity promotes mold growth, dust mites, and can worsen allergies and asthma.",
+    healthMultipliers: {},
+    healthRequired: ["prioritizeAirQuality"],
+  },
+  {
+    id: "health-inspect-mold",
+    name: "Inspect for Mold Growth",
+    description: "Check bathrooms, basements, attics, and areas around windows for visible mold or musty odors. Pay attention to corners, under sinks, and behind appliances.",
+    category: "seasonal",
+    priority: "safety",
+    frequencyValue: 3,
+    frequencyUnit: "months",
+    estimatedMinutes: 30,
+    estimatedCostLow: null,
+    estimatedCostHigh: null,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: ["mold_prevention", "clean_air"],
+    tips: "Use a flashlight to check dark corners. Small mold patches (under 10 sq ft) can be cleaned with detergent and water. Larger areas or mold behind walls require professional remediation.",
+    whyItMatters: "Mold exposure can cause severe respiratory issues and allergic reactions, especially dangerous for immunocompromised individuals.",
+    healthMultipliers: {},
+    healthRequired: ["hasImmunocompromised"],
+  },
+  {
+    id: "health-test-water-quality",
+    name: "Test Water Quality",
+    description: "Collect water samples from your kitchen tap and send to a certified lab for testing. Check for lead, bacteria, nitrates, and other contaminants.",
+    category: "plumbing",
+    priority: "safety",
+    frequencyValue: 6,
+    frequencyUnit: "months",
+    estimatedMinutes: 15,
+    estimatedCostLow: 3000,
+    estimatedCostHigh: 10000,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: ["clean_water"],
+    tips: "Run the tap for 30 seconds before collecting a sample. Contact your county health department for recommended labs. Home test kits provide quick results but lab testing is more comprehensive.",
+    whyItMatters: "Contaminated water poses serious health risks for immunocompromised individuals, including gastrointestinal illness and infections from bacteria or parasites.",
+    healthMultipliers: {},
+    healthRequired: ["hasImmunocompromised"],
+  },
+  {
+    id: "health-check-outlet-covers",
+    name: "Check Outlet Covers & Safety Locks",
+    description: "Verify that all accessible electrical outlets have child-proof covers and that cabinet safety locks on cleaning supplies and chemicals are secure.",
+    category: "safety",
+    priority: "safety",
+    frequencyValue: 1,
+    frequencyUnit: "months",
+    estimatedMinutes: 15,
+    estimatedCostLow: null,
+    estimatedCostHigh: null,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: ["injury_prevention"],
+    tips: "As children grow, they learn to defeat safety covers quickly. Upgrade from plug-in covers to sliding plate covers for better protection. Check that blind cords are out of reach and furniture is anchored to walls.",
+    whyItMatters: "Electrical outlets are a leading cause of childhood injuries in the home. Unsecured cleaning chemicals cause thousands of poisoning incidents each year in young children.",
+    healthMultipliers: {},
+    healthRequired: ["hasYoungChildren"],
+  },
+  {
+    id: "health-verify-water-heater-temp",
+    name: "Verify Water Heater Temp Below 120\u00B0F",
+    description: "Check your water heater thermostat setting and test the hot water temperature at the tap closest to the heater with a thermometer.",
+    category: "plumbing",
+    priority: "safety",
+    frequencyValue: 3,
+    frequencyUnit: "months",
+    estimatedMinutes: 10,
+    estimatedCostLow: null,
+    estimatedCostHigh: null,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: ["plumbing"],
+    applicableApplianceCategories: ["water_heater"],
+    seasonalMonths: [],
+    healthCategories: ["injury_prevention", "clean_water"],
+    tips: "Most water heaters have a dial on the gas valve or a thermostat behind an access panel. Set to 120\u00B0F or the 'warm' setting. Use a cooking thermometer at the faucet to verify. Tankless heaters have digital controls for precise adjustment.",
+    whyItMatters: "Water above 120\u00B0F can cause third-degree burns in seconds, especially on young children whose skin is thinner. Scald burns are one of the most common household injuries for children under 5.",
+    healthMultipliers: {},
+    healthRequired: ["hasYoungChildren"],
+  },
+  {
+    id: "health-check-grab-bars",
+    name: "Check Grab Bars and Handrails",
+    description: "Test all grab bars in bathrooms and handrails on stairways for stability. Verify they are firmly anchored and show no signs of loosening.",
+    category: "safety",
+    priority: "safety",
+    frequencyValue: 3,
+    frequencyUnit: "months",
+    estimatedMinutes: 15,
+    estimatedCostLow: null,
+    estimatedCostHigh: null,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: ["injury_prevention"],
+    tips: "Grab bars must be anchored into wall studs or use toggle bolts rated for the weight. Test by pulling firmly with your full body weight. Check that handrails extend the full length of stairs and are at a comfortable height (34-38 inches). Add non-slip strips to tub and shower floors.",
+    whyItMatters: "Falls are the leading cause of injury and death among adults over 65. Secure grab bars and handrails are the single most effective fall prevention measure in the home.",
+    healthMultipliers: {},
+    healthRequired: ["hasElderly"],
+  },
+  {
+    id: "health-inspect-weatherstripping",
+    name: "Inspect Weatherstripping",
+    description: "Check weatherstripping on all exterior doors and windows for gaps, compression, or deterioration. Test with a candle or incense for drafts.",
+    category: "windows_doors",
+    priority: "efficiency",
+    frequencyValue: 6,
+    frequencyUnit: "months",
+    estimatedMinutes: 30,
+    estimatedCostLow: 500,
+    estimatedCostHigh: 3000,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: [],
+    tips: "Hold a lit candle near door and window edges on a windy day — flickering indicates air leaks. Self-adhesive foam tape is the quickest fix. V-strip weatherstripping and door sweeps last longer. Check the garage-to-house door too.",
+    whyItMatters: "Air leaks around doors and windows can account for 25-30% of heating and cooling energy loss, significantly increasing utility bills and reducing comfort.",
+    healthMultipliers: {},
+    healthRequired: ["prioritizeEnergyEfficiency"],
+  },
+  {
+    id: "health-schedule-energy-audit",
+    name: "Schedule Energy Audit",
+    description: "Hire a certified energy auditor to assess your home's energy efficiency, including insulation, air sealing, HVAC performance, and appliance efficiency.",
+    category: "seasonal",
+    priority: "efficiency",
+    frequencyValue: 1,
+    frequencyUnit: "years",
+    estimatedMinutes: 180,
+    estimatedCostLow: 20000,
+    estimatedCostHigh: 50000,
+    diyDifficulty: "professional",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: [],
+    tips: "Many utilities offer free or subsidized energy audits. A blower door test identifies air leaks. Thermal imaging reveals insulation gaps. Ask about available rebates and tax credits for recommended improvements.",
+    whyItMatters: "A professional energy audit typically identifies improvements that can reduce energy bills by 20-30%. Many recommended upgrades qualify for federal tax credits and utility rebates.",
+    healthMultipliers: {},
+    healthRequired: ["prioritizeEnergyEfficiency"],
+  },
+  {
+    id: "health-clean-pet-areas",
+    name: "Clean Pet Areas and Check Pet Door",
+    description: "Deep clean pet bedding, feeding stations, and litter areas. Inspect pet doors for proper sealing and check that no wildlife is using the pet door.",
+    category: "cleaning",
+    priority: "efficiency",
+    frequencyValue: 1,
+    frequencyUnit: "months",
+    estimatedMinutes: 30,
+    estimatedCostLow: null,
+    estimatedCostHigh: null,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: ["clean_air", "pest_free"],
+    tips: "Wash pet bedding in hot water monthly. Vacuum areas around pet beds and feeding stations thoroughly. Check pet door flaps for tears that let in drafts or pests. Consider an electronic pet door that only opens for your pet's microchip.",
+    whyItMatters: "Pet areas accumulate dander, hair, and bacteria that affect indoor air quality. Poorly sealed pet doors are a common entry point for raccoons, opossums, and other wildlife.",
+    healthMultipliers: {},
+    healthRequired: ["hasPets"],
+  },
+  {
+    id: "health-check-radon",
+    name: "Check Radon Levels",
+    description: "Place a long-term radon test kit in the lowest livable level of your home for 90+ days to get an accurate annual average reading.",
+    category: "safety",
+    priority: "safety",
+    frequencyValue: 1,
+    frequencyUnit: "years",
+    estimatedMinutes: 10,
+    estimatedCostLow: 1500,
+    estimatedCostHigh: 3000,
+    diyDifficulty: "easy",
+    applicableHomeTypes: [],
+    applicableSystems: [],
+    applicableApplianceCategories: [],
+    seasonalMonths: [],
+    healthCategories: ["clean_air"],
+    tips: "Long-term tests (90+ days) are more accurate than short-term tests. Place the kit in the lowest lived-in level, away from drafts and humidity. If results exceed 4 pCi/L, install a radon mitigation system. Retest after any foundation work.",
+    whyItMatters: "Radon is the second leading cause of lung cancer and is responsible for about 21,000 deaths per year in the US. Annual testing ensures your home remains safe as conditions change.",
+    healthMultipliers: {},
+    healthRequired: ["prioritizeAirQuality"],
   },
 ];
 
@@ -1964,4 +2380,5 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
   ...poolTemplates,
   ...hotTubTemplates,
   ...seasonalTemplates,
+  ...healthTemplates,
 ];
