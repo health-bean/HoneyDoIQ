@@ -6,7 +6,10 @@ export async function middleware(request: NextRequest) {
     return await updateSession(request);
   } catch (error) {
     console.error("[Middleware Error]", request.nextUrl.pathname, error);
-    return NextResponse.next();
+    // Redirect to landing page on auth failure — don't let unauthenticated requests through
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
   }
 }
 
