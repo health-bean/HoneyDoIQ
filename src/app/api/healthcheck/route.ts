@@ -15,7 +15,13 @@ export async function GET() {
     const result = await db.execute(sql`SELECT 1 as ok`);
     checks.database = "connected";
   } catch (error) {
-    checks.database = `ERROR: ${error instanceof Error ? error.message : String(error)}`;
+    const err = error instanceof Error ? error : { message: String(error) };
+    checks.database = `ERROR: ${err.message}`;
+    if ("code" in err) checks.db_error_code = String((err as { code: string }).code);
+    if (error instanceof Error && error.cause) checks.db_cause = String(error.cause);
+    // Show a redacted version of the connection string to debug
+    const dbUrl = process.env.DATABASE_URL ?? "";
+    checks.db_url_prefix = dbUrl.substring(0, dbUrl.indexOf("@") > 0 ? dbUrl.indexOf("@") + 20 : 30) + "...";
   }
 
   // Check if key tables exist
