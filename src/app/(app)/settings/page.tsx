@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { signOut } from "@/lib/auth/actions";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -271,8 +272,12 @@ export default function SettingsPage() {
       {/* ---- About ---- */}
       <Section label="About">
         <Row label="Version" value="0.1.0" />
-        <Row label="Terms of Service" chevron />
-        <Row label="Privacy Policy" chevron />
+        <Link href="/terms">
+          <Row label="Terms of Service" chevron />
+        </Link>
+        <Link href="/privacy">
+          <Row label="Privacy Policy" chevron />
+        </Link>
       </Section>
 
       {/* ---- Sign Out ---- */}

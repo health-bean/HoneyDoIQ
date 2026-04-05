@@ -65,7 +65,9 @@ export async function updateSession(request: NextRequest) {
 
   // Protect all routes by default — only allow listed public routes without auth
   const isPublicRoute =
-    request.nextUrl.pathname === "/";
+    request.nextUrl.pathname === "/" ||
+    request.nextUrl.pathname === "/privacy" ||
+    request.nextUrl.pathname === "/terms";
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
