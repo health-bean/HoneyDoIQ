@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useCallback, useTransition, useMemo } from "react";
+import { useState, useCallback, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
-  ChevronRight,
   Loader2,
 } from "lucide-react";
-import { getApplicableTemplates } from "@/lib/tasks/scheduling";
 import type {
-  TaskTemplate,
-  TaskCategory,
   HomeType,
   SystemType,
   ApplianceCategory,
@@ -49,20 +45,12 @@ interface FormData {
   otherNotes: string;
 }
 
-type TaskSetupState = "track" | "done" | "skip";
-
-interface TaskSetup {
-  templateId: string;
-  state: TaskSetupState;
-  doneMonth: number;
-  doneYear: number;
-}
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const TOTAL_STEPS = 5; // Welcome is step 0 (not counted), steps 1-5
+const TOTAL_STEPS = 4; // Welcome is step 0 (not counted), steps 1-4
 
 const HOME_TYPES = [
   { value: "single_family", label: "Single Family", icon: "\u{1F3E1}", desc: "Detached house" },
@@ -257,49 +245,6 @@ const HEALTH_OPTIONS: { key: string; label: string; icon: string; desc: string }
   { key: "prioritizeEnergyEfficiency", label: "Energy efficiency", icon: "\u26A1", desc: "Weatherstripping, insulation, audits" },
 ];
 
-const CATEGORY_LABELS: Record<TaskCategory, string> = {
-  hvac: "HVAC",
-  plumbing: "Plumbing",
-  electrical: "Electrical",
-  safety: "Safety & Detection",
-  roof_gutters: "Roof & Gutters",
-  exterior: "Exterior",
-  windows_doors: "Windows & Doors",
-  appliance: "Appliances",
-  lawn_landscape: "Lawn & Landscape",
-  pest_control: "Pest Control",
-  garage: "Garage",
-  pool: "Pool",
-  cleaning: "Cleaning",
-  seasonal: "Seasonal",
-};
-
-const CATEGORY_ORDER: TaskCategory[] = [
-  "safety", "hvac", "plumbing", "electrical", "roof_gutters",
-  "exterior", "windows_doors", "appliance", "lawn_landscape",
-  "pest_control", "garage", "pool", "seasonal",
-];
-
-const MONTHS = [
-  { value: "1", label: "Jan" }, { value: "2", label: "Feb" },
-  { value: "3", label: "Mar" }, { value: "4", label: "Apr" },
-  { value: "5", label: "May" }, { value: "6", label: "Jun" },
-  { value: "7", label: "Jul" }, { value: "8", label: "Aug" },
-  { value: "9", label: "Sep" }, { value: "10", label: "Oct" },
-  { value: "11", label: "Nov" }, { value: "12", label: "Dec" },
-];
-
-function getYearOptions(): { value: string; label: string }[] {
-  const current = new Date().getFullYear();
-  const years: { value: string; label: string }[] = [];
-  for (let y = current; y >= current - 15; y--) {
-    years.push({ value: String(y), label: String(y) });
-  }
-  return years;
-}
-
-const YEAR_OPTIONS = getYearOptions();
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -344,23 +289,6 @@ function getActiveApplianceCategories(selectedItems: FormData["selectedItems"]):
     }
   }
   return appliances;
-}
-
-function frequencyLabel(value: number, unit: string): string {
-  if (unit === "one_time") return "One time";
-  const unitLabel = unit === "days" ? "day" : unit === "weeks" ? "week" : unit === "months" ? "month" : "year";
-  if (value === 1) return `Every ${unitLabel}`;
-  return `Every ${value} ${unitLabel}s`;
-}
-
-function groupTemplatesByCategory(templates: TaskTemplate[]): Map<TaskCategory, TaskTemplate[]> {
-  const groups = new Map<TaskCategory, TaskTemplate[]>();
-  for (const t of templates) {
-    const list = groups.get(t.category) || [];
-    list.push(t);
-    groups.set(t.category, list);
-  }
-  return groups;
 }
 
 // ---------------------------------------------------------------------------
@@ -929,251 +857,6 @@ function StepHousehold({
 }
 
 // ---------------------------------------------------------------------------
-// Step 5: Plan Preview
-// ---------------------------------------------------------------------------
-
-function TaskRow({
-  template,
-  setup,
-  onUpdate,
-}: {
-  template: TaskTemplate;
-  setup: TaskSetup;
-  onUpdate: (s: Partial<TaskSetup>) => void;
-}) {
-  const isEssential = template.priority === "safety" || template.priority === "prevent_damage";
-
-  return (
-    <div className={`rounded-xl border p-3.5 transition-all ${
-      setup.state === "skip"
-        ? "border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)] opacity-50"
-        : "border-[var(--color-neutral-200)] bg-white"
-    }`}>
-      <div className="flex items-start gap-3">
-        {/* Toggle */}
-        <button
-          type="button"
-          onClick={() => onUpdate({ state: setup.state === "skip" ? "track" : "skip" })}
-          className="mt-0.5 shrink-0"
-          aria-label={setup.state !== "skip" ? "Enabled" : "Skipped"}
-        >
-          <SelectionCheckmark selected={setup.state !== "skip"} />
-        </button>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[#1c1917]">{template.name}</span>
-            {isEssential && (
-              <span className="inline-flex items-center rounded-full bg-[var(--color-danger-50)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-danger-500)]">
-                Critical
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-[var(--color-neutral-400)]">
-            {frequencyLabel(template.frequencyValue, template.frequencyUnit)}
-          </span>
-
-          {/* Track / Already Done toggle -- only when not skipped */}
-          {setup.state !== "skip" && (
-            <div className="mt-3 flex flex-col gap-2">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => onUpdate({ state: "track" })}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                    setup.state === "track"
-                      ? "bg-[var(--color-primary-500)] text-white"
-                      : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-200)]"
-                  }`}
-                >
-                  Start tracking
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onUpdate({ state: "done" })}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                    setup.state === "done"
-                      ? "bg-[var(--color-success-500)] text-white"
-                      : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-200)]"
-                  }`}
-                >
-                  Already done
-                </button>
-              </div>
-
-              {setup.state === "done" && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-[var(--color-neutral-400)]">When?</span>
-                  <select
-                    value={setup.doneMonth}
-                    onChange={(e) => onUpdate({ doneMonth: Number(e.target.value) })}
-                    className="h-9 rounded-xl border border-[var(--color-neutral-200)] bg-white px-3 text-xs font-medium outline-none focus:border-[var(--color-primary-500)]"
-                  >
-                    {MONTHS.map((m) => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={setup.doneYear}
-                    onChange={(e) => onUpdate({ doneYear: Number(e.target.value) })}
-                    className="h-9 rounded-xl border border-[var(--color-neutral-200)] bg-white px-3 text-xs font-medium outline-none focus:border-[var(--color-primary-500)]"
-                  >
-                    {YEAR_OPTIONS.map((y) => (
-                      <option key={y.value} value={y.value}>{y.label}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StepPlanPreview({
-  form,
-  taskSetups,
-  onUpdateTask,
-  onBack,
-  onFinish,
-  onSkip,
-  isPending,
-  currentStep,
-}: {
-  form: FormData;
-  taskSetups: Record<string, TaskSetup>;
-  onUpdateTask: (templateId: string, update: Partial<TaskSetup>) => void;
-  onBack: () => void;
-  onFinish: () => void;
-  onSkip: () => void;
-  isPending: boolean;
-  currentStep: number;
-}) {
-  const healthFlags = useMemo(() => {
-    return Object.values(form.healthFlags).some(Boolean) ? form.healthFlags : undefined;
-  }, [form.healthFlags]);
-
-  const templates = useMemo(() => {
-    return getApplicableTemplates({
-      type: form.type as HomeType,
-      systems: getActiveSystemTypes(form.selectedItems),
-      appliances: getActiveApplianceCategories(form.selectedItems),
-    }, healthFlags);
-  }, [form, healthFlags]);
-
-  const grouped = useMemo(() => groupTemplatesByCategory(templates), [templates]);
-
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
-    const expanded = new Set<string>();
-    for (const [cat, catTemplates] of grouped) {
-      if (catTemplates.some((t) => t.priority === "safety" || t.priority === "prevent_damage")) {
-        expanded.add(cat);
-      }
-    }
-    return expanded;
-  });
-
-  const toggleCategory = (cat: string) => {
-    setExpandedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat); else next.add(cat);
-      return next;
-    });
-  };
-
-  const activeCount = Object.values(taskSetups).filter((s) => s.state !== "skip").length;
-  const totalCount = templates.length;
-  const doneCount = Object.values(taskSetups).filter((s) => s.state === "done").length;
-
-  return (
-    <>
-      <StepTitle
-        title="Your Maintenance Plan"
-        subtitle={`We found ${totalCount} tasks for your home. Customize what to track and mark anything you've already done.`}
-      />
-
-      {/* Summary bar */}
-      <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] p-3.5 mb-4">
-        <span className="text-2xl font-extrabold text-[var(--color-primary-500)]">{activeCount}</span>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-[#1c1917]">
-            task{activeCount !== 1 ? "s" : ""} selected
-          </p>
-          <p className="text-xs text-[var(--color-neutral-400)]">
-            {doneCount > 0 && `${doneCount} already done \u00B7 `}
-            {totalCount - activeCount} skipped
-          </p>
-        </div>
-      </div>
-
-      {/* Category groups */}
-      <div className="flex flex-col gap-2.5 mb-4">
-        {CATEGORY_ORDER.filter((cat) => grouped.has(cat)).map((cat) => {
-          const catTemplates = grouped.get(cat)!;
-          const expanded = expandedCategories.has(cat);
-          const catActiveCount = catTemplates.filter((t) => taskSetups[t.id]?.state !== "skip").length;
-          const hasCritical = catTemplates.some((t) => t.priority === "safety" || t.priority === "prevent_damage");
-
-          return (
-            <div key={cat} className="rounded-2xl border border-[var(--color-neutral-200)] overflow-hidden bg-white">
-              <button
-                type="button"
-                onClick={() => toggleCategory(cat)}
-                className="flex w-full items-center gap-3 p-3.5 text-left hover:bg-[var(--color-neutral-50)] transition-colors"
-              >
-                <ChevronRight
-                  className={`h-4 w-4 shrink-0 text-[var(--color-neutral-400)] transition-transform ${expanded ? "rotate-90" : ""}`}
-                />
-                <span className="flex-1 text-sm font-semibold text-[#1c1917]">
-                  {CATEGORY_LABELS[cat]}
-                </span>
-                {hasCritical && (
-                  <span className="inline-flex items-center rounded-full bg-[var(--color-danger-50)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-danger-500)]">
-                    Has critical
-                  </span>
-                )}
-                <span className="text-xs font-medium text-[var(--color-neutral-400)]">
-                  {catActiveCount}/{catTemplates.length}
-                </span>
-              </button>
-
-              {expanded && (
-                <div className="flex flex-col gap-2.5 border-t border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-3">
-                  {catTemplates.map((template) => (
-                    <TaskRow
-                      key={template.id}
-                      template={template}
-                      setup={taskSetups[template.id]}
-                      onUpdate={(update) => onUpdateTask(template.id, update)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="rounded-xl border border-[var(--color-info-500)]/20 bg-[var(--color-info-50)] p-3.5">
-        <p className="text-xs text-[var(--color-info-700)] leading-relaxed">
-          You can always add, remove, or adjust tasks later from the Tasks screen.
-          Brand and model details can be added when you complete your first task for each appliance.
-        </p>
-      </div>
-
-      <ContinueButton onClick={onFinish} loading={isPending}>
-        Create My Plan
-      </ContinueButton>
-      <BackButton onClick={onBack} />
-      <SkipLink onClick={onSkip} />
-      <StepIndicator current={currentStep} total={TOTAL_STEPS} />
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
 
@@ -1197,53 +880,13 @@ export default function OnboardingPage() {
     otherNotes: "",
   });
 
-  const [taskSetups, setTaskSetups] = useState<Record<string, TaskSetup>>({});
-
-  // When entering step 5, compute applicable templates and initialize setups
-  const initializeTaskSetups = useCallback(() => {
-    const healthFlags = Object.values(form.healthFlags).some(Boolean) ? form.healthFlags : undefined;
-    const templates = getApplicableTemplates({
-      type: form.type as HomeType,
-      systems: getActiveSystemTypes(form.selectedItems),
-      appliances: getActiveApplianceCategories(form.selectedItems),
-    }, healthFlags);
-
-    const now = new Date();
-    const setups: Record<string, TaskSetup> = {};
-    for (const t of templates) {
-      // Preserve existing setup if re-entering this step
-      if (taskSetups[t.id]) {
-        setups[t.id] = taskSetups[t.id];
-      } else {
-        setups[t.id] = {
-          templateId: t.id,
-          state: "track",
-          doneMonth: now.getMonth() + 1,
-          doneYear: now.getFullYear(),
-        };
-      }
-    }
-    setTaskSetups(setups);
-  }, [form, taskSetups]);
-
   const updateForm = useCallback((partial: Partial<FormData>) => {
     setForm((prev) => ({ ...prev, ...partial }));
-  }, []);
-
-  const updateTaskSetup = useCallback((templateId: string, update: Partial<TaskSetup>) => {
-    setTaskSetups((prev) => ({
-      ...prev,
-      [templateId]: { ...prev[templateId], ...update },
-    }));
   }, []);
 
   const goTo = useCallback(
     (next: number, dir: "forward" | "backward") => {
       if (animating) return;
-      // Initialize task setups when entering the plan preview (step 5)
-      if (next === 5 && dir === "forward") {
-        initializeTaskSetups();
-      }
       setDirection(dir);
       setAnimating(true);
       setTimeout(() => {
@@ -1251,11 +894,51 @@ export default function OnboardingPage() {
         setTimeout(() => setAnimating(false), 30);
       }, 200);
     },
-    [animating, initializeTaskSetups]
+    [animating]
   );
 
   const next = useCallback(() => goTo(step + 1, "forward"), [goTo, step]);
   const back = useCallback(() => goTo(step - 1, "backward"), [goTo, step]);
+
+  // Keep a ref so the popstate handler always sees the latest step & back fn
+  const stepRef = useRef(step);
+  const backRef = useRef(back);
+  useEffect(() => { stepRef.current = step; }, [step]);
+  useEffect(() => { backRef.current = back; }, [back]);
+
+  // Intercept hardware / gesture back so selections aren't lost
+  useEffect(() => {
+    // Push a dummy history entry so the browser back gesture fires popstate
+    // instead of navigating away from the page.
+    window.history.pushState({ onboarding: true }, "");
+
+    const onPopState = () => {
+      if (stepRef.current > 1) {
+        // Go back one wizard step and re-push so future back gestures keep working
+        backRef.current();
+        window.history.pushState({ onboarding: true }, "");
+      }
+      // On step 1 the user already sees the first screen – do nothing
+      // (the dummy entry we consumed prevents leaving the page)
+    };
+
+    window.addEventListener("popstate", onPopState);
+
+    // Also listen for the Capacitor hardware back button on Android
+    let capListener: { remove: () => void } | undefined;
+    import("@capacitor/app").then(({ App }) => {
+      App.addListener("backButton", () => {
+        if (stepRef.current > 1) {
+          backRef.current();
+        }
+      }).then((l) => { capListener = l; });
+    }).catch(() => { /* @capacitor/app not available (web) */ });
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      capListener?.remove();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Convert unified selectedItems back to separate systems and appliances for the API
   const buildApiPayload = useCallback(() => {
@@ -1283,51 +966,8 @@ export default function OnboardingPage() {
     return { systems, appliances, householdHealth };
   }, [form]);
 
-  const handleFinish = useCallback(() => {
-    startTransition(async () => {
-      const { systems, appliances, householdHealth } = buildApiPayload();
-
-      const taskSetupsList = Object.values(taskSetups).map((s) => ({
-        templateId: s.templateId,
-        state: s.state,
-        doneMonth: s.doneMonth,
-        doneYear: s.doneYear,
-      }));
-
-      try {
-        const res = await fetch("/api/onboarding", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            home: {
-              name: form.name.trim() || "My Home",
-              type: form.type || "single_family",
-              ownerRole: form.ownerRole || "i_live_here",
-              yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : null,
-              sqft: form.sqft ? Number(form.sqft) : null,
-              zip: form.zip || "",
-              state: form.state || "",
-              climateZone: CLIMATE_ZONES[form.state] ?? "",
-            },
-            systems,
-            appliances,
-            taskSetups: taskSetupsList,
-            householdHealth: householdHealth || undefined,
-          }),
-        });
-
-        if (!res.ok) throw new Error("Failed to save");
-      } catch {
-        // Still navigate on error for now
-        console.error("Failed to save onboarding data");
-      }
-
-      router.push("/dashboard");
-    });
-  }, [buildApiPayload, form, taskSetups, router, startTransition]);
-
-  // Skip to end: submit with whatever data is collected so far
-  const handleSkipToEnd = useCallback(() => {
+  // Submit onboarding data and navigate to dashboard
+  const handleSubmit = useCallback(() => {
     startTransition(async () => {
       const { systems, appliances, householdHealth } = buildApiPayload();
 
@@ -1397,7 +1037,7 @@ export default function OnboardingPage() {
             onChange={updateForm}
             onNext={next}
             onBack={back}
-            onSkip={handleSkipToEnd}
+            onSkip={handleSubmit}
             currentStep={wizardStep}
           />
         )}
@@ -1405,21 +1045,9 @@ export default function OnboardingPage() {
           <StepHousehold
             data={form}
             onChange={updateForm}
-            onNext={next}
+            onNext={handleSubmit}
             onBack={back}
-            onSkip={handleSkipToEnd}
-            currentStep={wizardStep}
-          />
-        )}
-        {step === 5 && (
-          <StepPlanPreview
-            form={form}
-            taskSetups={taskSetups}
-            onUpdateTask={updateTaskSetup}
-            onBack={back}
-            onFinish={handleFinish}
-            onSkip={handleSkipToEnd}
-            isPending={isPending}
+            onSkip={handleSubmit}
             currentStep={wizardStep}
           />
         )}
