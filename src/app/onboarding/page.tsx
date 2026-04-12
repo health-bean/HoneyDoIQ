@@ -177,7 +177,7 @@ export default function OnboardingPage() {
     return { systems, appliances, householdHealth };
   }, [form]);
 
-  // Submit onboarding data and navigate to dashboard
+  // Submit onboarding data (does NOT navigate — completion screen handles that)
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
       const { systems, appliances, householdHealth } = buildApiPayload();
@@ -208,10 +208,8 @@ export default function OnboardingPage() {
       } catch {
         console.error("Failed to save onboarding data");
       }
-
-      router.push("/dashboard");
     });
-  }, [buildApiPayload, form, router, startTransition]);
+  }, [buildApiPayload, form, startTransition]);
 
   const translateClass = animating
     ? direction === "forward"
@@ -249,7 +247,7 @@ export default function OnboardingPage() {
             onChange={updateForm}
             onNext={next}
             onBack={back}
-            onSkip={handleSubmit}
+            onSkip={() => { handleSubmit(); goTo(5, "forward"); }}
             currentStep={wizardStep}
             totalSteps={TOTAL_STEPS}
           />
