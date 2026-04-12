@@ -22,12 +22,14 @@ export type ApplianceCategory =
   | "oven_range" | "microwave" | "garbage_disposal" | "water_heater"
   | "furnace" | "ac_unit" | "water_softener" | "water_filter"
   | "humidifier" | "dehumidifier" | "garage_door" | "pool_pump"
-  | "hot_tub" | "sump_pump" | "generator" | "other";
+  | "hot_tub" | "sump_pump" | "generator" | "heat_pump"
+  | "boiler" | "fireplace" | "mini_split" | "evap_cooler"
+  | "solar_panels" | "other";
 
 export type SystemType =
   | "hvac" | "plumbing" | "electrical" | "roofing"
   | "foundation" | "water_source" | "sewage" | "irrigation"
-  | "pool" | "security";
+  | "pool" | "security" | "solar";
 
 export type FrequencyUnit = "days" | "weeks" | "months" | "years" | "one_time";
 

@@ -26,14 +26,16 @@ const homeRoleValues = ["i_live_here", "i_manage_this"] as const;
 
 const systemTypeValues = [
   "hvac", "plumbing", "electrical", "roofing", "foundation",
-  "water_source", "sewage", "irrigation", "pool", "security",
+  "water_source", "sewage", "irrigation", "pool", "security", "solar",
 ] as const;
 
 const applianceCategoryValues = [
   "refrigerator", "dishwasher", "washing_machine", "dryer", "oven_range",
   "microwave", "garbage_disposal", "water_heater", "furnace", "ac_unit",
   "water_softener", "water_filter", "humidifier", "dehumidifier",
-  "garage_door", "pool_pump", "hot_tub", "sump_pump", "generator", "other",
+  "garage_door", "pool_pump", "hot_tub", "sump_pump", "generator",
+  "heat_pump", "boiler", "fireplace", "mini_split", "evap_cooler", "solar_panels",
+  "other",
 ] as const;
 
 // ─── API Schemas ────────────────────────────────────────────────────────────
