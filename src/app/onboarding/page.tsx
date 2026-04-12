@@ -149,7 +149,7 @@ const MAJOR_SYSTEMS: HomeItemGroup[] = [
   {
     label: "Heating",
     items: [
-      { key: "furnace", label: "Furnace", icon: "\u{1F525}", type: "appliance", mappedAppliance: "furnace" as ApplianceCategory,
+      { key: "furnace", label: "Furnace (heat only)", icon: "\u{1F525}", type: "appliance", mappedAppliance: "furnace" as ApplianceCategory,
         subtypes: [
           { value: "gas", label: "Gas" },
           { value: "electric", label: "Electric" },
@@ -157,23 +157,23 @@ const MAJOR_SYSTEMS: HomeItemGroup[] = [
           { value: "propane", label: "Propane" },
         ],
       },
-      { key: "boiler", label: "Boiler", icon: "\u2668\uFE0F", type: "appliance", mappedAppliance: "boiler" as ApplianceCategory,
+      { key: "boiler", label: "Boiler (heat only, uses radiators)", icon: "\u2668\uFE0F", type: "appliance", mappedAppliance: "boiler" as ApplianceCategory,
         subtypes: [
           { value: "steam", label: "Steam" },
           { value: "hot-water", label: "Hot Water" },
         ],
       },
-      { key: "heat-pump", label: "Heat Pump", icon: "\u{1F504}", type: "appliance", mappedAppliance: "heat_pump" as ApplianceCategory },
+      { key: "heat-pump", label: "Heat Pump (heating and cooling)", icon: "\u{1F504}", type: "appliance", mappedAppliance: "heat_pump" as ApplianceCategory },
       { key: "fireplace", label: "Fireplace / Wood Stove", icon: "\u{1FAB5}", type: "appliance", mappedAppliance: "fireplace" as ApplianceCategory },
     ],
   },
   {
     label: "Cooling",
     items: [
-      { key: "central-ac", label: "Central AC", icon: "\u2744\uFE0F", type: "appliance", mappedAppliance: "ac_unit" as ApplianceCategory },
+      { key: "central-ac", label: "Central AC (cooling only)", icon: "\u2744\uFE0F", type: "appliance", mappedAppliance: "ac_unit" as ApplianceCategory },
       { key: "heat-pump-cooling", label: "Heat Pump", icon: "\u{1F504}", type: "appliance", mappedAppliance: "heat_pump" as ApplianceCategory },
-      { key: "evap-cooler", label: "Evaporative / Swamp Cooler", icon: "\u{1F4A8}", type: "appliance", mappedAppliance: "evap_cooler" as ApplianceCategory },
-      { key: "mini-split", label: "Mini-Split", icon: "\u{1F32C}\uFE0F", type: "appliance", mappedAppliance: "mini_split" as ApplianceCategory },
+      { key: "evap-cooler", label: "Swamp Cooler (cooling only, dry climates)", icon: "\u{1F4A8}", type: "appliance", mappedAppliance: "evap_cooler" as ApplianceCategory },
+      { key: "mini-split", label: "Mini-Split (heating and cooling)", icon: "\u{1F32C}\uFE0F", type: "appliance", mappedAppliance: "mini_split" as ApplianceCategory },
     ],
   },
   {
@@ -222,7 +222,8 @@ const MAJOR_SYSTEMS: HomeItemGroup[] = [
     label: "Outdoor",
     items: [
       { key: "irrigation", label: "Irrigation / Sprinklers", icon: "\u{1F331}", type: "system", mappedSystem: "irrigation" },
-      { key: "pool", label: "Pool / Hot Tub", icon: "\u{1F3CA}", type: "system", mappedSystem: "pool" },
+      { key: "pool", label: "Pool", icon: "\u{1F3CA}", type: "system", mappedSystem: "pool" },
+      { key: "hot-tub", label: "Hot Tub / Spa", icon: "\u2668\uFE0F", type: "appliance", mappedAppliance: "hot_tub" as ApplianceCategory },
     ],
   },
 ];
