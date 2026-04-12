@@ -788,15 +788,15 @@ export function StepComplete({
   buttonLabel?: string;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center -mx-5 -my-6 px-8 bg-gradient-to-b from-[#ecfdf5] via-[#d1fae5] to-[#a7f3d0]">
+    <div className="flex flex-1 flex-col items-center justify-center -mx-5 -my-6 px-8 bg-gradient-to-b from-[#fffbeb] via-[#fef3c7] to-[#fde68a]">
       <div className="flex flex-col items-center text-center max-w-xs">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/60 backdrop-blur-sm shadow-sm mb-5">
           <span className="text-3xl">{"\u2705"}</span>
         </div>
-        <h1 className="text-[26px] font-extrabold text-[#064e3b] tracking-tight leading-tight">
+        <h1 className="text-[26px] font-extrabold text-[#451a03] tracking-tight leading-tight">
           {title ?? "You\u0027re all set!"}
         </h1>
-        <p className="mt-2 text-sm text-[#065f46] leading-relaxed">
+        <p className="mt-2 text-sm text-[#92400e] leading-relaxed">
           {description ?? (
             <>
               We&apos;re building your personalized maintenance plan
@@ -814,18 +814,18 @@ export function StepComplete({
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/50 text-base">
                 {item.icon}
               </div>
-              <span className="text-[10px] font-bold text-[#047857]">{item.label}</span>
+              <span className="text-[10px] font-bold text-[#78350f]">{item.label}</span>
             </div>
           ))}
         </div>
-        <p className="mt-5 text-xs text-[#065f46]">
+        <p className="mt-5 text-xs text-[#92400e]">
           You can add appliances, contractors, and more from your home profile anytime.
         </p>
         <button
           type="button"
           onClick={onFinish}
           disabled={loading}
-          className="w-full h-[48px] bg-[#064e3b] text-white rounded-xl font-bold text-[14px] mt-6 transition-all hover:bg-[#065f46] active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full h-[48px] bg-[#451a03] text-white rounded-xl font-bold text-[14px] mt-6 transition-all hover:bg-[#78350f] active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           {buttonLabel ?? "Go to My Dashboard"}
