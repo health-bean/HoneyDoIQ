@@ -37,7 +37,7 @@ function HomeContent() {
 
         {/* Headline */}
         <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-[#451a03]">
-          Your honey-do list, but smarter.
+          Home care, simplified.
         </h1>
 
         {/* Subtext */}
