@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         zipCode: body.home.zip,
         state: body.home.state,
         climateZone: body.home.climateZone,
-        ownerRole: body.home.ownerRole as "i_live_here" | "i_manage_this",
+
       })
       .returning();
 

@@ -32,7 +32,6 @@ export interface HomeItemGroup {
 export interface FormData {
   name: string;
   type: string;
-  ownerRole: string;
   yearBuilt: string;
   sqft: string;
   zip: string;
@@ -46,16 +45,11 @@ export interface FormData {
 // ---------------------------------------------------------------------------
 
 export const HOME_TYPES = [
-  { value: "single_family", label: "Single Family", icon: "\u{1F3E1}", desc: "Detached house" },
-  { value: "townhouse", label: "Townhouse", icon: "\u{1F3D8}\uFE0F", desc: "Row or attached home" },
-  { value: "condo", label: "Condo / Apartment", icon: "\u{1F3E2}", desc: "Unit in a building" },
-  { value: "mobile_home", label: "Mobile Home", icon: "\u{1F3D5}\uFE0F", desc: "Manufactured home" },
+  { value: "single_family", label: "House", icon: "\u{1F3E1}", desc: "Detached home" },
+  { value: "townhouse", label: "Townhouse", icon: "\u{1F3D8}\uFE0F", desc: "Row or attached" },
+  { value: "condo", label: "Condo", icon: "\u{1F3E2}", desc: "Unit in a building" },
 ];
 
-export const OWNER_ROLES = [
-  { value: "i_live_here", label: "I live here" },
-  { value: "i_manage_this", label: "I own/manage this property" },
-];
 
 export const US_STATES = [
   { value: "AL", label: "Alabama" },
@@ -479,27 +473,6 @@ export function StepAboutHome({
               >
                 <span className="text-lg">{ht.icon}</span>
                 <span className="text-xs font-semibold text-[#1c1917]">{ht.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Owner role */}
-        <div>
-          <FormLabel>Your Role</FormLabel>
-          <div className="flex gap-2">
-            {OWNER_ROLES.map((role) => (
-              <button
-                key={role.value}
-                type="button"
-                onClick={() => onChange({ ownerRole: role.value })}
-                className={`flex-1 h-10 rounded-xl border-2 px-3 text-sm font-semibold transition-all ${
-                  data.ownerRole === role.value
-                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[#1c1917]"
-                    : "border-[var(--color-neutral-200)] text-[var(--color-neutral-400)] hover:border-[var(--color-neutral-300)]"
-                }`}
-              >
-                {role.label}
               </button>
             ))}
           </div>

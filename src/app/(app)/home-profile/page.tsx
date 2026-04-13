@@ -31,10 +31,8 @@ interface HomeData {
   type: string | null;
   yearBuilt: number | null;
   squareFootage: number | null;
-  city: string | null;
   state: string | null;
   zipCode: string | null;
-  ownerRole: string | null;
   climateZone: string | null;
   memberRole: string;
 }
@@ -465,9 +463,9 @@ export default function HomeProfilePage() {
           {home.yearBuilt ? ` \u00B7 Built ${home.yearBuilt}` : ""}
           {home.squareFootage ? ` \u00B7 ${home.squareFootage.toLocaleString()} sqft` : ""}
         </p>
-        {(home.city || home.state) && (
+        {home.state && (
           <p className="text-[12px] text-[#92400e] mt-1">
-            {[home.city, home.state, home.zipCode].filter(Boolean).join(", ")}
+            {[home.state, home.zipCode].filter(Boolean).join(", ")}
           </p>
         )}
         <div className="flex gap-4 mt-4">

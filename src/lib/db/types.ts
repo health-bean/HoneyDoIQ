@@ -5,9 +5,7 @@ import {
   homeMembers,
   homeInvites,
   homeSystems,
-  rooms,
   appliances,
-  taskTemplates,
   taskInstances,
   taskCompletions,
   contractors,
@@ -37,17 +35,9 @@ export type NewHomeInvite = InferInsertModel<typeof homeInvites>;
 export type HomeSystem = InferSelectModel<typeof homeSystems>;
 export type NewHomeSystem = InferInsertModel<typeof homeSystems>;
 
-// ─── Rooms ───────────────────────────────────────────────────────────────────
-export type Room = InferSelectModel<typeof rooms>;
-export type NewRoom = InferInsertModel<typeof rooms>;
-
 // ─── Appliances ──────────────────────────────────────────────────────────────
 export type Appliance = InferSelectModel<typeof appliances>;
 export type NewAppliance = InferInsertModel<typeof appliances>;
-
-// ─── Task Templates ──────────────────────────────────────────────────────────
-export type TaskTemplate = InferSelectModel<typeof taskTemplates>;
-export type NewTaskTemplate = InferInsertModel<typeof taskTemplates>;
 
 // ─── Task Instances ──────────────────────────────────────────────────────────
 export type TaskInstance = InferSelectModel<typeof taskInstances>;

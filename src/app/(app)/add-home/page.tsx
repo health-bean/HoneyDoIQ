@@ -31,7 +31,6 @@ export default function AddHomePage() {
   const [form, setForm] = useState<FormData>({
     name: "",
     type: "",
-    ownerRole: "i_live_here",
     yearBuilt: "",
     sqft: "",
     zip: "",
@@ -134,7 +133,6 @@ export default function AddHomePage() {
             home: {
               name: form.name.trim() || "My Home",
               type: form.type || "single_family",
-              ownerRole: form.ownerRole || "i_live_here",
               yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : null,
               sqft: form.sqft ? Number(form.sqft) : null,
               zip: form.zip || "",

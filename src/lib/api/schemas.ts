@@ -17,12 +17,8 @@ const frequencyUnitValues = [
 ] as const;
 
 const homeTypeValues = [
-  "single_family", "townhouse", "condo", "apartment", "multi_family",
-  "mobile_home", "vacation_home", "rental_property", "apartment_building",
-  "office_commercial", "warehouse_industrial",
+  "single_family", "townhouse", "condo",
 ] as const;
-
-const homeRoleValues = ["i_live_here", "i_manage_this"] as const;
 
 const systemTypeValues = [
   "hvac", "plumbing", "electrical", "roofing", "foundation",
@@ -77,7 +73,6 @@ export const pushSubscribeSchema = z.object({
 export const onboardingHomeSchema = z.object({
   name: z.string().min(1).max(255),
   type: z.enum(homeTypeValues),
-  ownerRole: z.enum(homeRoleValues).default("i_live_here"),
   yearBuilt: z.number().int().min(1600).max(new Date().getFullYear() + 5).optional().nullable(),
   sqft: z.number().int().min(1).max(1_000_000).optional().nullable(),
   zip: z.string().max(20).default(""),

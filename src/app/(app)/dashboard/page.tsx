@@ -217,35 +217,10 @@ export default function DashboardPage() {
     );
   }
 
-  // No home set up
+  // No home set up — send to onboarding
   if (!data?.home) {
-    return (
-      <div className="mx-auto max-w-lg px-5 py-8 bg-[#fafaf9] min-h-screen">
-        <EmptyState
-          icon={
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-          }
-          title="Set up your home"
-          description="Add your home details to start tracking maintenance tasks and get personalized recommendations."
-          action={{
-            label: "Get Started",
-            onClick: () => router.push("/onboarding"),
-          }}
-        />
-      </div>
-    );
+    router.replace("/onboarding");
+    return <DashboardSkeleton />;
   }
 
   const { score, overdue, upcoming, userName } = data;

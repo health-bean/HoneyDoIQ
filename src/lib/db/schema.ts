@@ -21,19 +21,6 @@ export const homeTypeEnum = pgEnum("home_type", [
   "single_family",
   "townhouse",
   "condo",
-  "apartment",
-  "multi_family",
-  "mobile_home",
-  "vacation_home",
-  "rental_property",
-  "apartment_building",
-  "office_commercial",
-  "warehouse_industrial",
-]);
-
-export const homeRoleEnum = pgEnum("home_role", [
-  "i_live_here",
-  "i_manage_this",
 ]);
 
 export const systemTypeEnum = pgEnum("system_type", [
@@ -50,20 +37,6 @@ export const systemTypeEnum = pgEnum("system_type", [
   "solar",
 ]);
 
-export const roomTypeEnum = pgEnum("room_type", [
-  "kitchen",
-  "bathroom",
-  "bedroom",
-  "living_room",
-  "dining_room",
-  "basement",
-  "attic",
-  "garage",
-  "laundry",
-  "office",
-  "outdoor",
-  "other",
-]);
 
 export const applianceCategoryEnum = pgEnum("appliance_category", [
   "refrigerator",
@@ -124,13 +97,6 @@ export const frequencyUnitEnum = pgEnum("frequency_unit", [
   "months",
   "years",
   "one_time",
-]);
-
-export const diyDifficultyEnum = pgEnum("diy_difficulty", [
-  "easy",
-  "moderate",
-  "hard",
-  "professional",
 ]);
 
 export const contractorSpecialtyEnum = pgEnum("contractor_specialty", [
@@ -194,14 +160,8 @@ export const homes = pgTable(
     yearBuilt: integer("year_built"),
     squareFootage: integer("square_footage"),
     climateZone: varchar("climate_zone", { length: 10 }),
-    addressLine1: varchar("address_line1", { length: 255 }),
-    addressLine2: varchar("address_line2", { length: 255 }),
-    city: varchar("city", { length: 100 }),
     state: varchar("state", { length: 50 }),
     zipCode: varchar("zip_code", { length: 20 }),
-    country: varchar("country", { length: 2 }).default("US"),
-    ownerRole: homeRoleEnum("owner_role").default("i_live_here"),
-    ownershipDate: date("ownership_date"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
@@ -301,27 +261,6 @@ export const homeSystems = pgTable(
   }),
 );
 
-export const rooms = pgTable(
-  "rooms",
-  {
-    id: uuid("id")
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    homeId: uuid("home_id")
-      .notNull()
-      .references(() => homes.id, { onDelete: "cascade" }),
-    name: varchar("name", { length: 100 }).notNull(),
-    type: roomTypeEnum("type"),
-    floor: integer("floor"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-  },
-  (table) => ({
-    homeIdIdx: index("rooms_home_id_idx").on(table.homeId),
-  }),
-);
-
 export const appliances = pgTable(
   "appliances",
   {
@@ -331,9 +270,6 @@ export const appliances = pgTable(
     homeId: uuid("home_id")
       .notNull()
       .references(() => homes.id, { onDelete: "cascade" }),
-    roomId: uuid("room_id").references(() => rooms.id, {
-      onDelete: "set null",
-    }),
     name: varchar("name", { length: 255 }).notNull(),
     category: applianceCategoryEnum("category"),
     brand: varchar("brand", { length: 100 }),
@@ -355,34 +291,6 @@ export const appliances = pgTable(
   }),
 );
 
-export const taskTemplates = pgTable("task_templates", {
-  id: uuid("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  category: taskCategoryEnum("category").notNull(),
-  priority: taskPriorityEnum("priority").notNull(),
-  defaultFrequencyValue: integer("default_frequency_value").notNull(),
-  defaultFrequencyUnit: frequencyUnitEnum("default_frequency_unit").notNull(),
-  estimatedMinutes: integer("estimated_minutes"),
-  estimatedCostLow: integer("estimated_cost_low"),
-  estimatedCostHigh: integer("estimated_cost_high"),
-  diyDifficulty: diyDifficultyEnum("diy_difficulty"),
-  applicableHomeTypes: text("applicable_home_types").array(),
-  applicableSystems: text("applicable_systems").array(),
-  applicableApplianceCategories: text(
-    "applicable_appliance_categories",
-  ).array(),
-  seasonalMonths: integer("seasonal_months").array(),
-  isSystemTemplate: boolean("is_system_template").default(true),
-  tips: text("tips"),
-  whyItMatters: text("why_it_matters"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
 export const taskInstances = pgTable(
   "task_instances",
   {
@@ -392,13 +300,7 @@ export const taskInstances = pgTable(
     homeId: uuid("home_id")
       .notNull()
       .references(() => homes.id, { onDelete: "cascade" }),
-    templateId: uuid("template_id").references(() => taskTemplates.id, {
-      onDelete: "set null",
-    }),
     applianceId: uuid("appliance_id").references(() => appliances.id, {
-      onDelete: "set null",
-    }),
-    roomId: uuid("room_id").references(() => rooms.id, {
       onDelete: "set null",
     }),
     name: varchar("name", { length: 255 }).notNull(),
@@ -422,9 +324,6 @@ export const taskInstances = pgTable(
   },
   (table) => ({
     homeIdIdx: index("task_instances_home_id_idx").on(table.homeId),
-    templateIdIdx: index("task_instances_template_id_idx").on(
-      table.templateId,
-    ),
   }),
 );
 
@@ -623,7 +522,6 @@ export const homesRelations = relations(homes, ({ one, many }) => ({
   user: one(users, { fields: [homes.userId], references: [users.id] }),
   members: many(homeMembers),
   invites: many(homeInvites),
-  rooms: many(rooms),
   appliances: many(appliances),
   homeSystems: many(homeSystems),
   taskInstances: many(taskInstances),
@@ -649,27 +547,13 @@ export const homeSystemsRelations = relations(homeSystems, ({ one }) => ({
   }),
 }));
 
-export const roomsRelations = relations(rooms, ({ one, many }) => ({
-  home: one(homes, { fields: [rooms.homeId], references: [homes.id] }),
-  appliances: many(appliances),
-  taskInstances: many(taskInstances),
-}));
-
 export const appliancesRelations = relations(appliances, ({ one, many }) => ({
   home: one(homes, {
     fields: [appliances.homeId],
     references: [homes.id],
   }),
-  room: one(rooms, {
-    fields: [appliances.roomId],
-    references: [rooms.id],
-  }),
   taskInstances: many(taskInstances),
   documents: many(documents),
-}));
-
-export const taskTemplatesRelations = relations(taskTemplates, ({ many }) => ({
-  instances: many(taskInstances),
 }));
 
 export const taskInstancesRelations = relations(
@@ -679,17 +563,9 @@ export const taskInstancesRelations = relations(
       fields: [taskInstances.homeId],
       references: [homes.id],
     }),
-    template: one(taskTemplates, {
-      fields: [taskInstances.templateId],
-      references: [taskTemplates.id],
-    }),
     appliance: one(appliances, {
       fields: [taskInstances.applianceId],
       references: [appliances.id],
-    }),
-    room: one(rooms, {
-      fields: [taskInstances.roomId],
-      references: [rooms.id],
     }),
     completions: many(taskCompletions),
   }),

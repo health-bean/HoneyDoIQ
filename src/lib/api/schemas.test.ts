@@ -131,7 +131,7 @@ describe("onboardingSchema", () => {
       home: {
         name: "My House",
         type: "single_family",
-        ownerRole: "i_live_here",
+
         yearBuilt: 1995,
         sqft: 2000,
         zip: "90210",
@@ -193,7 +193,7 @@ describe("onboardingSchema", () => {
       home: {
         name: "Test Home",
         type: "single_family",
-        ownerRole: "i_live_here",
+
         zip: "12345",
         state: "CA",
         climateZone: "3B",

@@ -12,10 +12,7 @@ export type TaskCategory =
 export type TaskPriority = "safety" | "prevent_damage" | "efficiency" | "cosmetic";
 
 export type HomeType =
-  | "single_family" | "townhouse" | "condo"
-  | "apartment" | "multi_family" | "mobile_home"
-  | "vacation_home" | "rental_property" | "apartment_building"
-  | "office_commercial" | "warehouse_industrial";
+  | "single_family" | "townhouse" | "condo";
 
 export type ApplianceCategory =
   | "refrigerator" | "dishwasher" | "washing_machine" | "dryer"
@@ -75,10 +72,10 @@ export interface TaskTemplate {
   healthRequired: HealthFlagKey[];
 }
 
-const ALL_DETACHED: HomeType[] = ["single_family", "townhouse", "multi_family", "mobile_home", "vacation_home", "rental_property"];
-const ALL_WITH_YARD: HomeType[] = ["single_family", "townhouse", "multi_family", "vacation_home", "rental_property"];
-const ALL_HOMES: HomeType[] = ["single_family", "townhouse", "condo", "apartment", "multi_family", "mobile_home", "vacation_home", "rental_property", "apartment_building", "office_commercial", "warehouse_industrial"];
-const HOUSES_ONLY: HomeType[] = ["single_family", "multi_family", "mobile_home", "vacation_home", "rental_property"];
+const ALL_DETACHED: HomeType[] = ["single_family", "townhouse"];
+const ALL_WITH_YARD: HomeType[] = ["single_family", "townhouse"];
+const ALL_HOMES: HomeType[] = ["single_family", "townhouse", "condo"];
+const HOUSES_ONLY: HomeType[] = ["single_family"];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HVAC
@@ -1941,7 +1938,7 @@ const hotTubTemplates: TaskTemplate[] = [
     estimatedCostLow: 0,
     estimatedCostHigh: 2000,
     diyDifficulty: "moderate",
-    applicableHomeTypes: ["single_family", "townhouse", "multi_family", "mobile_home"],
+    applicableHomeTypes: ["single_family", "townhouse"],
     applicableSystems: [],
     applicableApplianceCategories: ["hot_tub"],
     seasonalMonths: [],
@@ -1963,7 +1960,7 @@ const hotTubTemplates: TaskTemplate[] = [
     estimatedCostLow: 0,
     estimatedCostHigh: 1500,
     diyDifficulty: "easy",
-    applicableHomeTypes: ["single_family", "townhouse", "multi_family", "mobile_home"],
+    applicableHomeTypes: ["single_family", "townhouse"],
     applicableSystems: [],
     applicableApplianceCategories: ["hot_tub"],
     seasonalMonths: [],
@@ -1985,7 +1982,7 @@ const hotTubTemplates: TaskTemplate[] = [
     estimatedCostLow: 0,
     estimatedCostHigh: 2000,
     diyDifficulty: "moderate",
-    applicableHomeTypes: ["single_family", "townhouse", "multi_family", "mobile_home"],
+    applicableHomeTypes: ["single_family", "townhouse"],
     applicableSystems: [],
     applicableApplianceCategories: ["hot_tub"],
     seasonalMonths: [],
@@ -2007,7 +2004,7 @@ const hotTubTemplates: TaskTemplate[] = [
     estimatedCostLow: 0,
     estimatedCostHigh: 1500,
     diyDifficulty: "easy",
-    applicableHomeTypes: ["single_family", "townhouse", "multi_family", "mobile_home"],
+    applicableHomeTypes: ["single_family", "townhouse"],
     applicableSystems: [],
     applicableApplianceCategories: ["hot_tub"],
     seasonalMonths: [],
@@ -2029,7 +2026,7 @@ const hotTubTemplates: TaskTemplate[] = [
     estimatedCostLow: 0,
     estimatedCostHigh: 1500,
     diyDifficulty: "easy",
-    applicableHomeTypes: ["single_family", "townhouse", "multi_family", "mobile_home"],
+    applicableHomeTypes: ["single_family", "townhouse"],
     applicableSystems: [],
     applicableApplianceCategories: ["hot_tub"],
     seasonalMonths: [],
