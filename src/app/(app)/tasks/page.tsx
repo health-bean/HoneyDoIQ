@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, ChevronRight, Check, SkipForward, Clock, Home } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, Check, SkipForward, Clock, Home,
+  Shield, Thermometer, Droplet, Zap, Trees, Square, Refrigerator,
+  Flower2, Bug, Warehouse, Waves, Sparkles, Calendar,
+} from "lucide-react";
 import {
   Button,
   Badge,
@@ -36,7 +39,7 @@ interface Task {
   updatedAt: string;
 }
 
-type FilterKey = "all" | "overdue" | "due_soon" | "upcoming" | "completed";
+type FilterKey = "all" | "overdue" | "due_soon" | "completed";
 type StatusGroup = "overdue" | "due_soon" | "upcoming";
 
 // ---------------------------------------------------------------------------
@@ -103,19 +106,32 @@ function relativeDueLabel(dateStr: string, today: Date): { text: string; color: 
 // Category & Priority mappings
 // ---------------------------------------------------------------------------
 
-const categoryLabels: Record<string, string> = {
-  hvac: "HVAC",
-  plumbing: "Plumbing",
-  electrical: "Electrical",
-  exterior: "Exterior",
-  appliance: "Appliance",
-  safety: "Safety",
-  lawn: "Lawn & Garden",
-  cleaning: "Cleaning",
-  roofing: "Roofing",
-  pest_control: "Pest Control",
-  interior: "Interior",
-  general: "General",
+const CATEGORY_CONFIG: Record<string, { label: string }> = {
+  safety: { label: "Safety & Security" },
+  hvac: { label: "Heating & Cooling" },
+  plumbing: { label: "Plumbing & Water" },
+  electrical: { label: "Electrical" },
+  roof_gutters: { label: "Roof & Gutters" },
+  exterior: { label: "Exterior" },
+  windows_doors: { label: "Windows & Doors" },
+  appliance: { label: "Appliances" },
+  lawn_landscape: { label: "Lawn & Landscape" },
+  pest_control: { label: "Pest Control" },
+  garage: { label: "Garage" },
+  pool: { label: "Pool & Hot Tub" },
+  cleaning: { label: "Cleaning" },
+  seasonal: { label: "Seasonal" },
+};
+
+function getCategoryLabel(category: string): string {
+  return CATEGORY_CONFIG[category]?.label || category;
+}
+
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  safety: Shield, hvac: Thermometer, plumbing: Droplet, electrical: Zap,
+  roof_gutters: Home, exterior: Trees, windows_doors: Square, appliance: Refrigerator,
+  lawn_landscape: Flower2, pest_control: Bug, garage: Warehouse, pool: Waves,
+  cleaning: Sparkles, seasonal: Calendar,
 };
 
 const categoryBadgeVariant: Record<string, "default" | "success" | "warning" | "danger" | "info"> = {
@@ -144,7 +160,6 @@ const filterOptions: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "overdue", label: "Overdue" },
   { key: "due_soon", label: "Due Soon" },
-  { key: "upcoming", label: "Upcoming" },
   { key: "completed", label: "Completed" },
 ];
 
@@ -161,6 +176,16 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const toggleCategory = useCallback((category: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  }, []);
 
   // Add-task form state
   const [newName, setNewName] = useState("");
@@ -297,33 +322,56 @@ export default function TasksPage() {
   // -------------------------------------------------------------------------
 
   const activeTasks = tasks.filter((t) => t.isActive);
-
-  const grouped = activeTasks.reduce(
-    (acc, task) => {
-      const group = getStatusGroup(task, today);
-      acc[group].push(task);
-      return acc;
-    },
-    { overdue: [] as Task[], due_soon: [] as Task[], upcoming: [] as Task[] }
-  );
-
   const completedTasks = tasks.filter((t) => !t.isActive);
-
-  const counts: Record<FilterKey, number> = {
-    all: activeTasks.length,
-    overdue: grouped.overdue.length,
-    due_soon: grouped.due_soon.length,
-    upcoming: grouped.upcoming.length,
-    completed: completedTasks.length,
-  };
 
   const byDate = (a: Task, b: Task) =>
     new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime();
 
-  grouped.overdue.sort(byDate);
-  grouped.due_soon.sort(byDate);
-  grouped.upcoming.sort(byDate);
+  const tasksByCategory = activeTasks.reduce<Record<string, Task[]>>((acc, task) => {
+    const cat = task.category;
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(task);
+    return acc;
+  }, {});
+
+  for (const cat of Object.keys(tasksByCategory)) {
+    tasksByCategory[cat].sort(byDate);
+  }
+
+  const sortedCategories = Object.keys(tasksByCategory).sort((a, b) => {
+    const aHasOverdue = tasksByCategory[a].some((t) => daysBetween(t.nextDueDate, today) < 0);
+    const bHasOverdue = tasksByCategory[b].some((t) => daysBetween(t.nextDueDate, today) < 0);
+    if (aHasOverdue && !bHasOverdue) return -1;
+    if (!aHasOverdue && bHasOverdue) return 1;
+    return getCategoryLabel(a).localeCompare(getCategoryLabel(b));
+  });
+
+  const overdueCount = activeTasks.filter((t) => daysBetween(t.nextDueDate, today) < 0).length;
+  const dueSoonCount = activeTasks.filter((t) => {
+    const diff = daysBetween(t.nextDueDate, today);
+    return diff >= 0 && diff <= 7;
+  }).length;
+
+  const counts: Record<FilterKey, number> = {
+    all: activeTasks.length,
+    overdue: overdueCount,
+    due_soon: dueSoonCount,
+    completed: completedTasks.length,
+  };
+
   completedTasks.sort(byDate);
+
+  // Auto-expand urgent categories on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (activeTasks.length === 0) return;
+    const urgent = new Set<string>();
+    for (const task of activeTasks) {
+      const diff = daysBetween(task.nextDueDate, today);
+      if (diff <= 7) urgent.add(task.category);
+    }
+    setExpandedCategories(urgent);
+  }, [tasks.length > 0]);
 
   // -------------------------------------------------------------------------
   // Render helpers
@@ -371,7 +419,7 @@ export default function TasksPage() {
             {task.name}
           </p>
           <p className="text-xs text-[var(--color-neutral-400)] mt-0.5 truncate">
-            {categoryLabels[task.category] || task.category} &middot; {priLabel} &middot;{" "}
+            {getCategoryLabel(task.category)} &middot; {priLabel} &middot;{" "}
             <span className={due.color}>{due.text}</span>
           </p>
         </div>
@@ -382,22 +430,45 @@ export default function TasksPage() {
     );
   }
 
-  function renderGroup(
-    title: string,
-    items: Task[],
-    group: StatusGroup | "completed",
-    titleColor: string
-  ) {
-    if (items.length === 0) return null;
+  function renderCategorySection(category: string, categoryTasks: Task[]) {
+    const label = getCategoryLabel(category);
+    const IconComponent = CATEGORY_ICONS[category] || Home;
+    const isExpanded = expandedCategories.has(category);
+    const overdueInCat = categoryTasks.filter((t) => daysBetween(t.nextDueDate, today) < 0).length;
+    const dueSoonInCat = categoryTasks.filter((t) => {
+      const diff = daysBetween(t.nextDueDate, today);
+      return diff >= 0 && diff <= 7;
+    }).length;
+
+    let visibleTasks = categoryTasks;
+    if (filter === "overdue") visibleTasks = categoryTasks.filter((t) => daysBetween(t.nextDueDate, today) < 0);
+    else if (filter === "due_soon") visibleTasks = categoryTasks.filter((t) => { const d = daysBetween(t.nextDueDate, today); return d >= 0 && d <= 7; });
+
+    if (visibleTasks.length === 0) return null;
+
     return (
-      <section className="mb-5">
-        <h2 className={`text-xs font-bold uppercase tracking-widest mb-2.5 ${titleColor}`}>
-          {title}
-          <span className="ml-1.5 text-[11px] font-normal opacity-60">({items.length})</span>
-        </h2>
-        <div className="flex flex-col gap-2">
-          {items.map((task) => renderTaskRow(task, group))}
-        </div>
+      <section key={category} className="mb-4">
+        <button onClick={() => toggleCategory(category)} className="w-full flex items-center gap-2.5 px-1 py-2">
+          <IconComponent className="w-4 h-4 text-[var(--color-neutral-400)] shrink-0" />
+          <span className="text-[13px] font-bold text-stone-900 flex-1 text-left">{label}</span>
+          {overdueInCat > 0 && (
+            <span className="inline-flex items-center justify-center rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">
+              {overdueInCat} overdue
+            </span>
+          )}
+          {overdueInCat === 0 && dueSoonInCat > 0 && (
+            <span className="inline-flex items-center justify-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+              {dueSoonInCat} due soon
+            </span>
+          )}
+          <span className="text-[11px] text-[var(--color-neutral-400)]">{visibleTasks.length}</span>
+          {isExpanded ? <ChevronDown className="w-4 h-4 text-[var(--color-neutral-300)]" /> : <ChevronRight className="w-4 h-4 text-[var(--color-neutral-300)]" />}
+        </button>
+        {isExpanded && (
+          <div className="flex flex-col gap-2 mt-1">
+            {visibleTasks.map((task) => renderTaskRow(task, getStatusGroup(task, today)))}
+          </div>
+        )}
       </section>
     );
   }
@@ -416,7 +487,7 @@ export default function TasksPage() {
         </div>
         {/* Filter pills skeleton */}
         <div className="flex gap-2 mb-6">
-          {[1, 2, 3, 4, 5].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-8 w-20 animate-pulse rounded-full bg-neutral-200" />
           ))}
         </div>
@@ -503,7 +574,7 @@ export default function TasksPage() {
           label="Category"
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
-          options={Object.entries(categoryLabels).map(([value, label]) => ({
+          options={Object.entries(CATEGORY_CONFIG).map(([value, { label }]) => ({
             value,
             label,
           }))}
@@ -625,48 +696,20 @@ export default function TasksPage() {
 
       {/* Task groups */}
       <div>
-        {(filter === "all" || filter === "overdue") &&
-          renderGroup("Overdue", grouped.overdue, "overdue", "text-red-600")}
-
-        {(filter === "all" || filter === "due_soon") &&
-          renderGroup("Due this week", grouped.due_soon, "due_soon", "text-amber-500")}
-
-        {(filter === "all" || filter === "upcoming") &&
-          renderGroup("Upcoming", grouped.upcoming, "upcoming", "text-[var(--color-neutral-400)]")}
-
-        {(filter === "all" || filter === "completed") &&
-          completedTasks.length > 0 &&
-          renderGroup("Completed", completedTasks, "completed", "text-green-600")}
-
-        {/* Empty states for filtered views */}
-        {filter === "overdue" && grouped.overdue.length === 0 && (
-          <EmptyState
-            icon={<Check className="h-8 w-8" />}
-            title="No overdue tasks"
-            description="You're all caught up! No tasks are past due."
-          />
+        {filter !== "completed" && sortedCategories.map((cat) => renderCategorySection(cat, tasksByCategory[cat]))}
+        {filter === "completed" && completedTasks.length > 0 && (
+          <section className="mb-5">
+            <h2 className="text-xs font-bold uppercase tracking-widest mb-2.5 text-green-600">
+              Completed <span className="ml-1.5 text-[11px] font-normal opacity-60">({completedTasks.length})</span>
+            </h2>
+            <div className="flex flex-col gap-2">
+              {completedTasks.sort(byDate).map((task) => renderTaskRow(task, "completed"))}
+            </div>
+          </section>
         )}
-        {filter === "due_soon" && grouped.due_soon.length === 0 && (
-          <EmptyState
-            icon={<Check className="h-8 w-8" />}
-            title="Nothing due soon"
-            description="No tasks are due in the next 7 days."
-          />
-        )}
-        {filter === "upcoming" && grouped.upcoming.length === 0 && (
-          <EmptyState
-            icon={<Check className="h-8 w-8" />}
-            title="No upcoming tasks"
-            description="No tasks scheduled beyond this week."
-          />
-        )}
-        {filter === "completed" && completedTasks.length === 0 && (
-          <EmptyState
-            icon={<Check className="h-8 w-8" />}
-            title="No completed tasks"
-            description="You haven't completed any tasks yet. Get started!"
-          />
-        )}
+        {filter === "overdue" && overdueCount === 0 && <EmptyState icon={<Check className="h-8 w-8" />} title="No overdue tasks" description="You're all caught up!" />}
+        {filter === "due_soon" && dueSoonCount === 0 && <EmptyState icon={<Check className="h-8 w-8" />} title="Nothing due soon" description="No tasks due in the next 7 days." />}
+        {filter === "completed" && completedTasks.length === 0 && <EmptyState icon={<Check className="h-8 w-8" />} title="No completed tasks" description="You haven't completed any tasks yet." />}
       </div>
 
       {/* ------------------------------------------------------------------- */}
@@ -689,7 +732,7 @@ export default function TasksPage() {
                 variant={categoryBadgeVariant[selectedTask.category] || "default"}
                 size="md"
               >
-                {categoryLabels[selectedTask.category] || selectedTask.category}
+                {getCategoryLabel(selectedTask.category)}
               </Badge>
               <Badge
                 variant={
@@ -728,7 +771,7 @@ export default function TasksPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Category</p>
                 <p className="text-sm font-medium text-foreground">
-                  {categoryLabels[selectedTask.category] || selectedTask.category}
+                  {getCategoryLabel(selectedTask.category)}
                 </p>
               </div>
               <div>
