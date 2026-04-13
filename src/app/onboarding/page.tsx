@@ -74,42 +74,44 @@ export default function OnboardingPage() {
 
   const DRAFT_KEY = "pico_onboarding_draft";
 
-  const [step, setStep] = useState(() => {
-    if (typeof window === "undefined") return 1;
-    try {
-      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
-      return draft?.step ?? 1;
-    } catch { return 1; }
-  });
+  const [step, setStep] = useState(1);
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
-  const [form, setForm] = useState<FormData>(() => {
-    const blank: FormData = {
-      name: "",
-      type: "",
-      yearBuilt: "",
-      sqft: "",
-      zip: "",
-      state: "",
-      selectedItems: initialSelectedItems(),
-      healthFlags: initialHealthFlags(),
-    };
-    if (typeof window === "undefined") return blank;
-    try {
-      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
-      return draft?.form ? { ...blank, ...draft.form } : blank;
-    } catch { return blank; }
+  const [form, setForm] = useState<FormData>({
+    name: "",
+    type: "",
+    yearBuilt: "",
+    sqft: "",
+    zip: "",
+    state: "",
+    selectedItems: initialSelectedItems(),
+    healthFlags: initialHealthFlags(),
   });
 
-  // Save draft to localStorage on every change
+  // Restore draft from localStorage on mount (avoids hydration mismatch)
   useEffect(() => {
-    // Don't save the completion step — that means we're done
+    try {
+      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+      if (draft?.form) {
+        setForm((prev) => ({ ...prev, ...draft.form }));
+        if (draft.step && draft.step > 1 && draft.step < 5) {
+          setStep(draft.step);
+        }
+      }
+    } catch { /* ignore */ }
+    setDraftLoaded(true);
+  }, []);
+
+  // Save draft to localStorage on every change (after initial load)
+  useEffect(() => {
+    if (!draftLoaded) return;
     if (step >= 5) return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ step, form }));
     } catch { /* storage full or unavailable */ }
-  }, [step, form]);
+  }, [step, form, draftLoaded]);
 
   const clearDraft = useCallback(() => {
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
