@@ -45,7 +45,7 @@ export function useActiveHomeProvider() {
 
       // Set active home from localStorage or first home
       const stored = typeof window !== "undefined"
-        ? localStorage.getItem("honeydo-active-home")
+        ? localStorage.getItem("pico-active-home")
         : null;
 
       if (stored && data.homes.some((h: HomeInfo) => h.id === stored)) {
@@ -67,7 +67,7 @@ export function useActiveHomeProvider() {
   const handleSetActiveHomeId = useCallback((id: string) => {
     setActiveHomeId(id);
     if (typeof window !== "undefined") {
-      localStorage.setItem("honeydo-active-home", id);
+      localStorage.setItem("pico-active-home", id);
     }
   }, []);
 

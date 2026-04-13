@@ -78,7 +78,7 @@ function NotificationBanner() {
   const { supported, permission, subscribe } = usePushNotifications();
   const isDismissedFromStorage = useSyncExternalStore(
     (cb) => { window.addEventListener("storage", cb); return () => window.removeEventListener("storage", cb); },
-    () => localStorage.getItem("honeydo-notif-dismissed") === "true",
+    () => localStorage.getItem("pico-notif-dismissed") === "true",
     () => false
   );
   const [dismissed, setDismissed] = useState(false);
@@ -90,7 +90,7 @@ function NotificationBanner() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    localStorage.setItem("honeydo-notif-dismissed", "true");
+    localStorage.setItem("pico-notif-dismissed", "true");
   };
 
   return (

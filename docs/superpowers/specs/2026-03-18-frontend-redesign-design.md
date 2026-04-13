@@ -1,4 +1,4 @@
-# HoneyDoIQ Frontend Redesign — Design Spec
+# Pico Home Frontend Redesign — Design Spec
 
 ## Direction
 

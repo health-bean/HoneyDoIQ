@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// HoneyDoIQ — Master Task Template Universe
+// Pico Home — Master Task Template Universe
 // The core knowledge base of home maintenance tasks.
 // ═══════════════════════════════════════════════════════════════════════════
 

@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               HealthBean LLC (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;)
-              operates HoneyDoIQ, a home maintenance tracking application. This
+              operates Pico Home, a home maintenance tracking application. This
               Privacy Policy explains how we collect, use, and protect your
               information when you use our service.
             </p>
@@ -84,7 +84,7 @@ export default function PrivacyPolicyPage() {
               How We Use Your Information
             </h2>
             <ul className="list-disc pl-5 space-y-2">
-              <li>To provide and maintain the HoneyDoIQ service</li>
+              <li>To provide and maintain the Pico Home service</li>
               <li>
                 To generate personalized maintenance schedules and
                 recommendations
@@ -116,7 +116,7 @@ export default function PrivacyPolicyPage() {
               Third-Party Services
             </h2>
             <p className="mb-3">
-              We use the following third-party services to operate HoneyDoIQ:
+              We use the following third-party services to operate Pico Home:
             </p>
             <ul className="list-disc pl-5 space-y-2">
               <li>
@@ -178,7 +178,7 @@ export default function PrivacyPolicyPage() {
               Children&apos;s Privacy
             </h2>
             <p>
-              HoneyDoIQ is not intended for children under 13. We do not
+              Pico Home is not intended for children under 13. We do not
               knowingly collect personal information from children under 13. If
               you believe a child has provided us with personal information,
               please contact us and we will promptly delete it.
@@ -192,7 +192,7 @@ export default function PrivacyPolicyPage() {
             <p>
               We may update this Privacy Policy from time to time. Changes will
               be posted on this page with an updated effective date. Your
-              continued use of HoneyDoIQ after changes are posted constitutes
+              continued use of Pico Home after changes are posted constitutes
               acceptance of the revised policy.
             </p>
           </section>

@@ -24,7 +24,7 @@ export default function TermsOfServicePage() {
               Acceptance of Terms
             </h2>
             <p>
-              By accessing or using HoneyDoIQ (&quot;the Service&quot;),
+              By accessing or using Pico Home (&quot;the Service&quot;),
               operated by HealthBean LLC (&quot;we,&quot; &quot;us,&quot; or
               &quot;our&quot;), you agree to be bound by these Terms of Service.
               If you do not agree to these terms, do not use the Service.
@@ -36,7 +36,7 @@ export default function TermsOfServicePage() {
               The Service
             </h2>
             <p>
-              HoneyDoIQ is a home maintenance tracking application that helps
+              Pico Home is a home maintenance tracking application that helps
               you schedule, track, and manage home upkeep tasks. The Service
               includes task management, home health scoring, document storage,
               push notifications, and email digests.
@@ -48,7 +48,7 @@ export default function TermsOfServicePage() {
               Accounts
             </h2>
             <p>
-              You sign in to HoneyDoIQ using Google OAuth. You are responsible
+              You sign in to Pico Home using Google OAuth. You are responsible
               for all activity that occurs under your account. Each account is
               for a single individual. You may invite household members to share
               access to your home&apos;s maintenance data.
@@ -86,7 +86,7 @@ export default function TermsOfServicePage() {
               Your Content
             </h2>
             <p>
-              You retain ownership of all data you provide to HoneyDoIQ,
+              You retain ownership of all data you provide to Pico Home,
               including home details, task information, documents, and
               contractor records. By using the Service, you grant HealthBean LLC
               a limited license to store, process, and display your content
@@ -100,7 +100,7 @@ export default function TermsOfServicePage() {
               Home Health Score Disclaimer
             </h2>
             <p>
-              The home health score provided by HoneyDoIQ reflects your task
+              The home health score provided by Pico Home reflects your task
               completion compliance only. It is{" "}
               <strong>
                 not a safety assessment, home inspection, or professional
@@ -118,7 +118,7 @@ export default function TermsOfServicePage() {
             </h2>
             <p>
               You are responsible for the content of files you upload to
-              HoneyDoIQ. Do not upload content you do not have the right to
+              Pico Home. Do not upload content you do not have the right to
               store. We store your documents securely and provide time-limited
               access URLs, but we are not responsible for the accuracy or
               completeness of uploaded documents.
@@ -130,7 +130,7 @@ export default function TermsOfServicePage() {
               Service Availability
             </h2>
             <p>
-              We strive to keep HoneyDoIQ available at all times, but we do not
+              We strive to keep Pico Home available at all times, but we do not
               guarantee uninterrupted or error-free operation. We may modify,
               suspend, or discontinue features of the Service at any time, with
               or without notice.
@@ -180,7 +180,7 @@ export default function TermsOfServicePage() {
             <p>
               We may update these Terms of Service from time to time. Changes
               will be posted on this page with an updated effective date. Your
-              continued use of HoneyDoIQ after changes are posted constitutes
+              continued use of Pico Home after changes are posted constitutes
               acceptance of the revised terms.
             </p>
           </section>

@@ -21,13 +21,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "HoneyDoIQ",
+  title: "Pico Home",
   description: "Smart home maintenance tracking and reminders",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "HoneyDoIQ",
+    title: "Pico Home",
   },
 };
 

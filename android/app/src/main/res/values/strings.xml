@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">HoneyDoIQ</string>
-    <string name="title_activity_main">HoneyDoIQ</string>
-    <string name="package_name">com.honeyDoIQ.app</string>
-    <string name="custom_url_scheme">com.honeyDoIQ.app</string>
+    <string name="app_name">Pico Home</string>
+    <string name="title_activity_main">Pico Home</string>
+    <string name="package_name">com.picohome.app</string>
+    <string name="custom_url_scheme">com.picohome.app</string>
 </resources>

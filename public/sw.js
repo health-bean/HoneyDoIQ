@@ -1,4 +1,4 @@
-// HoneyDoIQ Service Worker — Push Notifications
+// Pico Home Service Worker — Push Notifications
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 self.addEventListener("install", (_event) => {
@@ -18,7 +18,7 @@ self.addEventListener("push", (event) => {
     body: data.body || "You have maintenance tasks due.",
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
-    tag: data.tag || "honeydo-reminder",
+    tag: data.tag || "pico-reminder",
     data: {
       url: data.url || "/tasks",
     },
@@ -30,7 +30,7 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     self.registration.showNotification(
-      data.title || "HoneyDoIQ Reminder",
+      data.title || "Pico Home Reminder",
       options
     )
   );

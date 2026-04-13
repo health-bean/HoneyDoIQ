@@ -2,7 +2,7 @@
 
 ## Overview
 
-Add Privacy Policy and Terms of Service pages to HoneyDoIQ. Required for Apple App Store and Google Play Store submission. Both pages are static content, no API calls.
+Add Privacy Policy and Terms of Service pages to Pico Home. Required for Apple App Store and Google Play Store submission. Both pages are static content, no API calls.
 
 ## Pages
 
@@ -10,7 +10,7 @@ Add Privacy Policy and Terms of Service pages to HoneyDoIQ. Required for Apple A
 
 Static page. Sections:
 
-1. **Introduction** — HealthBean LLC operates HoneyDoIQ. Effective date.
+1. **Introduction** — HealthBean LLC operates Pico Home. Effective date.
 2. **Information We Collect**
    - Account info via Google OAuth (name, email, profile photo)
    - Home details (address, type, year built, square footage, systems, appliances)
@@ -33,8 +33,8 @@ Static page. Sections:
 
 Static page. Sections:
 
-1. **Acceptance** — By using HoneyDoIQ you agree to these terms. If you don't agree, don't use the app.
-2. **The Service** — HoneyDoIQ is a home maintenance tracking tool operated by HealthBean LLC.
+1. **Acceptance** — By using Pico Home you agree to these terms. If you don't agree, don't use the app.
+2. **The Service** — Pico Home is a home maintenance tracking tool operated by HealthBean LLC.
 3. **Accounts** — You sign in via Google OAuth. You're responsible for your account activity. One person per account.
 4. **Acceptable Use** — Don't misuse the service (no illegal activity, no reverse engineering, no automated scraping, no uploading malicious files).
 5. **Your Content** — You own your data (home details, documents, task data). You grant HealthBean LLC a license to store and process it to provide the service. We don't claim ownership.

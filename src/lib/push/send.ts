@@ -13,7 +13,7 @@ function ensureVapid() {
   if (!publicKey || !privateKey) {
     throw new Error("VAPID keys not configured — set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY");
   }
-  webPush.setVapidDetails("mailto:support@honeydoiq.app", publicKey, privateKey);
+  webPush.setVapidDetails("mailto:support@picohome.app", publicKey, privateKey);
   vapidConfigured = true;
 }
 

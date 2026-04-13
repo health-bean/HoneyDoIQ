@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.honeydoiq.app",
-  appName: "HoneyDoIQ",
+  appId: "com.picohome.app",
+  appName: "Pico Home",
   webDir: "out",
   server: {
     // In development, point to your local server

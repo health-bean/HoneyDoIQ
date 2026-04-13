@@ -5,13 +5,13 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: honeydo
-      POSTGRES_PASSWORD: honeydo_dev
-      POSTGRES_DB: honeydo_iq
+      POSTGRES_USER: picohome
+      POSTGRES_PASSWORD: picohome_dev
+      POSTGRES_DB: pico_home
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U honeydo -d honeydo_iq"]
+      test: ["CMD-SHELL", "pg_isready -U picohome -d pico_home"]
       interval: 5s
       timeout: 5s
       retries: 5

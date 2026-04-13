@@ -1,4 +1,4 @@
-package com.honeyDoIQ.app;
+package com.picohome.app;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -136,18 +136,18 @@ export async function POST(request: Request) {
 
       const body = `Hi ${userName},
 
-Here's your weekly HoneyDoIQ digest:
+Here's your weekly Pico Home digest:
 
 ${overdue.length > 0 ? `🔴 OVERDUE (${overdue.length}):\n${overdueList}\n` : "✅ No overdue tasks — great job!\n"}
 ${upcoming.length > 0 ? `📅 COMING UP THIS WEEK (${upcoming.length}):\n${upcomingList}\n` : "No tasks due this week.\n"}
 📊 COMPLETED THIS WEEK: ${completions} task${completions !== 1 ? "s" : ""}
 
-View your full task list: ${process.env.NEXT_PUBLIC_APP_URL || "https://honeydoiq.app"}/tasks
+View your full task list: ${process.env.NEXT_PUBLIC_APP_URL || "https://picohome.app"}/tasks
 
-— HoneyDoIQ`;
+— Pico Home`;
 
       const emailApiKey = process.env.EMAIL_API_KEY;
-      const emailFrom = process.env.EMAIL_FROM || "noreply@honeydoiq.app";
+      const emailFrom = process.env.EMAIL_FROM || "noreply@picohome.app";
 
       if (emailApiKey) {
         const res = await fetch("https://api.resend.com/emails", {
@@ -157,7 +157,7 @@ View your full task list: ${process.env.NEXT_PUBLIC_APP_URL || "https://honeydoi
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: `HoneyDoIQ <${emailFrom}>`,
+            from: `Pico Home <${emailFrom}>`,
             to: [digestUser.email],
             subject,
             text: body,

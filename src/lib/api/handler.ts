@@ -19,8 +19,8 @@ interface ApiHandlerOptions {
 }
 
 const ALLOWED_ORIGINS = new Set([
-  process.env.NEXT_PUBLIC_APP_URL || "https://honeydoiq.app",
-  "https://honeydoiq.app",
+  process.env.NEXT_PUBLIC_APP_URL || "https://picohome.app",
+  "https://picohome.app",
   // Capacitor native apps send null origin
 ]);
 

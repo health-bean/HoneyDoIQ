@@ -1,6 +1,6 @@
 {
-  "name": "HoneyDoIQ",
-  "short_name": "HoneyDoIQ",
+  "name": "Pico Home",
+  "short_name": "Pico Home",
   "description": "Smart home maintenance tracking and reminders",
   "start_url": "/",
   "display": "standalone",
