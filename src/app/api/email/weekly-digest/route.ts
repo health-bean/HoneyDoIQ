@@ -147,7 +147,7 @@ View your full task list: ${process.env.NEXT_PUBLIC_APP_URL || "https://picohome
 — Pico Home`;
 
       const emailApiKey = process.env.EMAIL_API_KEY;
-      const emailFrom = process.env.EMAIL_FROM || "noreply@picohome.app";
+      const emailFrom = process.env.EMAIL_FROM || "noreply@healthbean.io";
 
       if (emailApiKey) {
         const res = await fetch("https://api.resend.com/emails", {
