@@ -169,6 +169,14 @@ export default function TasksPage() {
   const [completionDate, setCompletionDate] = useState<string>("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
+  // Edit mode state
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editFreqValue, setEditFreqValue] = useState(1);
+  const [editFreqUnit, setEditFreqUnit] = useState("months");
+  const [editNotes, setEditNotes] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
   const toggleCategory = useCallback((category: string) => {
     setExpandedCategories((prev) => {
       const next = new Set(prev);
@@ -191,6 +199,17 @@ export default function TasksPage() {
   useEffect(() => {
     setCompletionDate("");
   }, [selectedTask?.id]);
+
+  // Populate edit fields when a task is selected
+  useEffect(() => {
+    if (selectedTask) {
+      setEditName(selectedTask.name);
+      setEditFreqValue(selectedTask.frequencyValue);
+      setEditFreqUnit(selectedTask.frequencyUnit);
+      setEditNotes(selectedTask.notes || "");
+      setEditing(false);
+    }
+  }, [selectedTask]);
 
   const today = getToday();
 
@@ -219,6 +238,31 @@ export default function TasksPage() {
   // -------------------------------------------------------------------------
   // Actions
   // -------------------------------------------------------------------------
+
+  const saveTaskEdit = useCallback(async () => {
+    if (!selectedTask) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/tasks/${selectedTask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          frequencyValue: editFreqValue,
+          frequencyUnit: editFreqUnit,
+          notes: editNotes.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      setEditing(false);
+      setSelectedTask(null);
+      await fetchTasks();
+    } catch {
+      // stay in edit mode
+    } finally {
+      setEditSaving(false);
+    }
+  }, [selectedTask, editName, editFreqValue, editFreqUnit, editNotes, fetchTasks]);
 
   const completeTask = useCallback(
     async (id: string, completedDate?: string) => {
@@ -713,136 +757,191 @@ export default function TasksPage() {
       {/* ------------------------------------------------------------------- */}
       <Dialog
         open={!!selectedTask}
-        onClose={() => setSelectedTask(null)}
-        title={selectedTask?.name}
+        onClose={() => { setSelectedTask(null); setEditing(false); }}
+        title={editing ? "Edit Task" : selectedTask?.name}
         size="lg"
       >
         {selectedTask && (
           <div className="space-y-5 mt-2">
-            {selectedTask.description && (
-              <p className="text-sm text-muted-foreground">{selectedTask.description}</p>
-            )}
+            {editing ? (
+              <div className="space-y-4">
+                <Input
+                  label="Task Name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Frequency"
+                    type="number"
+                    min={1}
+                    value={String(editFreqValue)}
+                    onChange={(e) => setEditFreqValue(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                  <Select
+                    label="Unit"
+                    value={editFreqUnit}
+                    onChange={(e) => setEditFreqUnit(e.target.value)}
+                    options={[
+                      { value: "days", label: "Days" },
+                      { value: "weeks", label: "Weeks" },
+                      { value: "months", label: "Months" },
+                      { value: "years", label: "Years" },
+                    ]}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-foreground">Notes</label>
+                  <textarea
+                    className="flex min-h-[80px] w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder="Any notes..."
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button variant="primary" className="flex-1" onClick={saveTaskEdit} disabled={!editName.trim() || editSaving}>
+                    {editSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button variant="outline" className="flex-1" onClick={() => setEditing(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+                    Edit
+                  </Button>
+                </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Badge
-                variant={categoryBadgeVariant[selectedTask.category] || "default"}
-                size="md"
-              >
-                {getCategoryLabel(selectedTask.category)}
-              </Badge>
-              <Badge
-                variant={
-                  selectedTask.priority === "safety"
-                    ? "danger"
-                    : selectedTask.priority === "prevent_damage"
-                      ? "warning"
-                      : selectedTask.priority === "efficiency"
-                        ? "info"
-                        : "success"
-                }
-                size="md"
-              >
-                {priorityLabels[selectedTask.priority] || selectedTask.priority} Priority
-              </Badge>
-            </div>
+                {selectedTask.description && (
+                  <p className="text-sm text-muted-foreground">{selectedTask.description}</p>
+                )}
 
-            {/* Details grid */}
-            <div className="grid grid-cols-2 gap-4 rounded-lg bg-muted/50 p-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Frequency</p>
-                <p className="text-sm font-medium text-foreground">
-                  Every {selectedTask.frequencyValue} {selectedTask.frequencyUnit}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Next Due</p>
-                <p className="text-sm font-medium text-foreground">
-                  {new Date(selectedTask.nextDueDate + "T00:00:00").toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Category</p>
-                <p className="text-sm font-medium text-foreground">
-                  {getCategoryLabel(selectedTask.category)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Last Completed</p>
-                <p className="text-sm font-medium text-foreground">
-                  {selectedTask.lastCompletedDate
-                    ? new Date(selectedTask.lastCompletedDate + "T00:00:00").toLocaleDateString("en-US", {
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    variant={categoryBadgeVariant[selectedTask.category] || "default"}
+                    size="md"
+                  >
+                    {getCategoryLabel(selectedTask.category)}
+                  </Badge>
+                  <Badge
+                    variant={
+                      selectedTask.priority === "safety"
+                        ? "danger"
+                        : selectedTask.priority === "prevent_damage"
+                          ? "warning"
+                          : selectedTask.priority === "efficiency"
+                            ? "info"
+                            : "success"
+                    }
+                    size="md"
+                  >
+                    {priorityLabels[selectedTask.priority] || selectedTask.priority} Priority
+                  </Badge>
+                </div>
+
+                {/* Details grid */}
+                <div className="grid grid-cols-2 gap-4 rounded-lg bg-muted/50 p-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Frequency</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Every {selectedTask.frequencyValue} {selectedTask.frequencyUnit}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Next Due</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {new Date(selectedTask.nextDueDate + "T00:00:00").toLocaleDateString("en-US", {
                         month: "long",
                         day: "numeric",
                         year: "numeric",
-                      })
-                    : "Never"}
-                </p>
-              </div>
-            </div>
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Category</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {getCategoryLabel(selectedTask.category)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Last Completed</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {selectedTask.lastCompletedDate
+                        ? new Date(selectedTask.lastCompletedDate + "T00:00:00").toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : "Never"}
+                    </p>
+                  </div>
+                </div>
 
-            {/* Notes */}
-            {selectedTask.notes && (
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-1">Notes</h4>
-                <p className="text-sm text-muted-foreground">{selectedTask.notes}</p>
-              </div>
-            )}
+                {/* Notes */}
+                {selectedTask.notes && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">Notes</h4>
+                    <p className="text-sm text-muted-foreground">{selectedTask.notes}</p>
+                  </div>
+                )}
 
-            {/* Backdate option */}
-            {selectedTask.isActive && (
-              <div>
-                <label className="text-xs text-muted-foreground">When did you last do this? (optional)</label>
-                <input
-                  type="date"
-                  value={completionDate}
-                  max={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setCompletionDate(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              </div>
-            )}
+                {/* Backdate option */}
+                {selectedTask.isActive && (
+                  <div>
+                    <label className="text-xs text-muted-foreground">When did you last do this? (optional)</label>
+                    <input
+                      type="date"
+                      value={completionDate}
+                      max={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setCompletionDate(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    />
+                  </div>
+                )}
 
-            {/* Actions */}
-            {selectedTask.isActive && (
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="primary"
-                  className="flex-1"
-                  onClick={() => {
-                    completeTask(selectedTask.id, completionDate || undefined);
-                    setSelectedTask(null);
-                  }}
-                >
-                  <Check className="h-4 w-4" />
-                  Complete
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    skipTask(selectedTask.id);
-                    setSelectedTask(null);
-                  }}
-                >
-                  <SkipForward className="h-4 w-4" />
-                  Skip
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="flex-1"
-                  onClick={() => {
-                    snoozeTask(selectedTask.id);
-                    setSelectedTask(null);
-                  }}
-                >
-                  <Clock className="h-4 w-4" />
-                  Snooze
-                </Button>
-              </div>
+                {/* Actions */}
+                {selectedTask.isActive && (
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="primary"
+                      className="flex-1"
+                      onClick={() => {
+                        completeTask(selectedTask.id, completionDate || undefined);
+                        setSelectedTask(null);
+                      }}
+                    >
+                      <Check className="h-4 w-4" />
+                      Complete
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        skipTask(selectedTask.id);
+                        setSelectedTask(null);
+                      }}
+                    >
+                      <SkipForward className="h-4 w-4" />
+                      Skip
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="flex-1"
+                      onClick={() => {
+                        snoozeTask(selectedTask.id);
+                        setSelectedTask(null);
+                      }}
+                    >
+                      <Clock className="h-4 w-4" />
+                      Snooze
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

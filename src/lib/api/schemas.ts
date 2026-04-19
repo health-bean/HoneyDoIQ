@@ -165,6 +165,7 @@ export const createContractorSchema = z.object({
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type CompleteTaskInput = z.infer<typeof completeTaskSchema>;
 export type SnoozeTaskInput = z.infer<typeof snoozeTaskSchema>;
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type InviteInput = z.infer<typeof inviteSchema>;
 export type PushSubscribeInput = z.infer<typeof pushSubscribeSchema>;
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
