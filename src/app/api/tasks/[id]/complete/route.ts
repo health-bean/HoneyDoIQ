@@ -25,12 +25,15 @@ export const POST = apiHandler(async ({ user, request }) => {
 
   const body = await parseBodyOrDefault(request, completeTaskSchema);
   const now = new Date();
+  const completionDate = body.completedDate
+    ? new Date(body.completedDate + "T12:00:00") // noon to avoid timezone issues
+    : now;
 
   // Record completion
   await db.insert(taskCompletions).values({
     taskInstanceId: task.id,
     completedBy: user.id,
-    completedAt: now,
+    completedAt: completionDate,
     isDiy: body.isDiy,
     costCents: body.costCents ?? null,
     timeSpentMinutes: body.timeSpentMinutes ?? null,
@@ -38,11 +41,11 @@ export const POST = apiHandler(async ({ user, request }) => {
     skipped: false,
   });
 
-  // Calculate next due date
+  // Calculate next due date from the completion date
   const nextDue = getNextDueDate(
     task.frequencyValue,
     task.frequencyUnit as FrequencyUnit,
-    now
+    completionDate
   );
 
   // For one_time tasks, deactivate instead of rescheduling
@@ -51,7 +54,7 @@ export const POST = apiHandler(async ({ user, request }) => {
   await db
     .update(taskInstances)
     .set({
-      lastCompletedDate: now.toISOString().split("T")[0],
+      lastCompletedDate: completionDate.toISOString().split("T")[0],
       nextDueDate: nextDue.toISOString().split("T")[0],
       isActive: isOneTime ? false : task.isActive,
       updatedAt: now,

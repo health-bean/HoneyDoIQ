@@ -166,6 +166,7 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [completionDate, setCompletionDate] = useState<string>("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const toggleCategory = useCallback((category: string) => {
@@ -185,6 +186,11 @@ export default function TasksPage() {
   const [newFreqUnit, setNewFreqUnit] = useState("months");
   const [newNotes, setNewNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Reset completion date when selecting a new task
+  useEffect(() => {
+    setCompletionDate("");
+  }, [selectedTask?.id]);
 
   const today = getToday();
 
@@ -215,13 +221,13 @@ export default function TasksPage() {
   // -------------------------------------------------------------------------
 
   const completeTask = useCallback(
-    async (id: string) => {
+    async (id: string, completedDate?: string) => {
       setActionLoading(id);
       try {
         const res = await fetch(`/api/tasks/${id}/complete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify(completedDate ? { completedDate } : {}),
         });
         if (!res.ok) throw new Error("Failed to complete task");
         await fetchTasks();
@@ -786,6 +792,20 @@ export default function TasksPage() {
               </div>
             )}
 
+            {/* Backdate option */}
+            {selectedTask.isActive && (
+              <div>
+                <label className="text-xs text-muted-foreground">When did you last do this? (optional)</label>
+                <input
+                  type="date"
+                  value={completionDate}
+                  max={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setCompletionDate(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            )}
+
             {/* Actions */}
             {selectedTask.isActive && (
               <div className="flex gap-2 pt-2">
@@ -793,7 +813,7 @@ export default function TasksPage() {
                   variant="primary"
                   className="flex-1"
                   onClick={() => {
-                    completeTask(selectedTask.id);
+                    completeTask(selectedTask.id, completionDate || undefined);
                     setSelectedTask(null);
                   }}
                 >

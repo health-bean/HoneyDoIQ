@@ -51,10 +51,18 @@ export const completeTaskSchema = z.object({
   costCents: z.number().int().min(0).max(10_000_000).optional().nullable(),
   timeSpentMinutes: z.number().int().min(0).max(10_000).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
+  completedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD").optional().nullable(),
 });
 
 export const snoozeTaskSchema = z.object({
   days: z.number().int().min(1).max(365).default(7),
+});
+
+export const updateTaskSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  frequencyValue: z.number().int().min(1).max(365).optional(),
+  frequencyUnit: z.enum(frequencyUnitValues).optional(),
+  notes: z.string().max(2000).optional().nullable(),
 });
 
 export const inviteSchema = z.object({
