@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SkeletonCard, Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useToast } from "@/components/ui";
 import { CheckCircle2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -183,6 +184,7 @@ function ScorePlaceholder() {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -230,8 +232,9 @@ export default function DashboardPage() {
       });
       if (!res.ok) throw new Error("Failed to complete task");
       await fetchDashboard();
+      toast("Task completed!", "success");
     } catch {
-      // Silently handle -- could add toast here
+      toast("Failed to complete task", "error");
     } finally {
       setCompletingIds((prev) => {
         const next = new Set(prev);

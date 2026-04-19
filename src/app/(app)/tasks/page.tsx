@@ -13,6 +13,7 @@ import {
   Dialog,
   EmptyState,
   SkeletonCard,
+  useToast,
 } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
@@ -159,6 +160,7 @@ const filterOptions: { key: FilterKey; label: string }[] = [
 
 export default function TasksPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -257,12 +259,13 @@ export default function TasksPage() {
       setEditing(false);
       setSelectedTask(null);
       await fetchTasks();
+      toast("Task updated", "success");
     } catch {
-      // stay in edit mode
+      toast("Failed to update task", "error");
     } finally {
       setEditSaving(false);
     }
-  }, [selectedTask, editName, editFreqValue, editFreqUnit, editNotes, fetchTasks]);
+  }, [selectedTask, editName, editFreqValue, editFreqUnit, editNotes, fetchTasks, toast]);
 
   const completeTask = useCallback(
     async (id: string, completedDate?: string) => {
@@ -275,13 +278,14 @@ export default function TasksPage() {
         });
         if (!res.ok) throw new Error("Failed to complete task");
         await fetchTasks();
+        toast("Task completed!", "success");
       } catch {
-        // silently fail — task list will stay as-is
+        toast("Failed to complete task", "error");
       } finally {
         setActionLoading(null);
       }
     },
-    [fetchTasks]
+    [fetchTasks, toast]
   );
 
   const skipTask = useCallback(
@@ -295,13 +299,14 @@ export default function TasksPage() {
         });
         if (!res.ok) throw new Error("Failed to skip task");
         await fetchTasks();
+        toast("Task skipped", "info");
       } catch {
-        // silently fail
+        toast("Failed to skip task", "error");
       } finally {
         setActionLoading(null);
       }
     },
-    [fetchTasks]
+    [fetchTasks, toast]
   );
 
   const snoozeTask = useCallback(
@@ -315,13 +320,14 @@ export default function TasksPage() {
         });
         if (!res.ok) throw new Error("Failed to snooze task");
         await fetchTasks();
+        toast("Task snoozed for 7 days", "info");
       } catch {
-        // silently fail
+        toast("Failed to snooze task", "error");
       } finally {
         setActionLoading(null);
       }
     },
-    [fetchTasks]
+    [fetchTasks, toast]
   );
 
   const handleAddTask = useCallback(async () => {
@@ -350,12 +356,13 @@ export default function TasksPage() {
       setNewFreqUnit("months");
       setNewNotes("");
       await fetchTasks();
+      toast("Task added!", "success");
     } catch {
-      // stay on dialog so user can retry
+      toast("Failed to add task", "error");
     } finally {
       setSaving(false);
     }
-  }, [newName, newCategory, newPriority, newFreqValue, newFreqUnit, newNotes, fetchTasks]);
+  }, [newName, newCategory, newPriority, newFreqValue, newFreqUnit, newNotes, fetchTasks, toast]);
 
   // -------------------------------------------------------------------------
   // Filtering & grouping
