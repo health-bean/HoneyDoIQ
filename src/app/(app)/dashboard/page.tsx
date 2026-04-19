@@ -187,6 +187,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const greeting = useMemo(() => getGreeting(), []);
 
@@ -207,6 +208,17 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
+
+  useEffect(() => {
+    if (!localStorage.getItem("pico_welcome_dismissed")) {
+      setShowWelcome(true);
+    }
+  }, []);
+
+  const dismissWelcome = useCallback(() => {
+    setShowWelcome(false);
+    localStorage.setItem("pico_welcome_dismissed", "1");
+  }, []);
 
   async function completeTask(taskId: string) {
     setCompletingIds((prev) => new Set(prev).add(taskId));
@@ -287,6 +299,39 @@ export default function DashboardPage() {
           </span>
         </div>
       </div>
+
+      {/* ---- Welcome Nudge Card ---- */}
+      {showWelcome && !score && (
+        <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 relative">
+          <button
+            onClick={dismissWelcome}
+            className="absolute top-3 right-3 text-amber-400 hover:text-amber-600"
+            aria-label="Dismiss"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <h3 className="text-[15px] font-bold text-stone-900 mb-2">Welcome to Pico Home!</h3>
+          <p className="text-xs text-stone-600 leading-relaxed mb-3">
+            We&apos;ve created a maintenance plan based on your home. Here are a few things you can do:
+          </p>
+          <ul className="space-y-1.5 text-xs text-stone-600">
+            <li className="flex items-center gap-2">
+              <span className="text-amber-500 font-bold">1.</span>
+              <span>Mark tasks you&apos;ve already done with the date you last did them</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-amber-500 font-bold">2.</span>
+              <span>Add any systems or appliances we missed from your home profile</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-amber-500 font-bold">3.</span>
+              <span>Set up notifications so you never miss a task</span>
+            </li>
+          </ul>
+        </div>
+      )}
 
       {/* ---- Health Score Card ---- */}
       {score ? (() => {
