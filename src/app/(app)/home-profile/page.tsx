@@ -19,6 +19,8 @@ import {
   Phone,
   Star,
   Wrench,
+  Plus,
+  X,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -339,6 +341,20 @@ export default function HomeProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
+  // System add/delete state
+  const [addSystemOpen, setAddSystemOpen] = useState(false);
+  const [newSystemType, setNewSystemType] = useState("");
+  const [newSystemSubtype, setNewSystemSubtype] = useState("");
+  const [addingSystem, setAddingSystem] = useState(false);
+  const [deletingSystemId, setDeletingSystemId] = useState<string | null>(null);
+
+  // Appliance add/delete state
+  const [addApplianceOpen, setAddApplianceOpen] = useState(false);
+  const [newApplianceName, setNewApplianceName] = useState("");
+  const [newApplianceCategory, setNewApplianceCategory] = useState("");
+  const [addingAppliance, setAddingAppliance] = useState(false);
+  const [deletingApplianceId, setDeletingApplianceId] = useState<string | null>(null);
+
   // Upload form state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadName, setUploadName] = useState("");
@@ -418,6 +434,99 @@ export default function HomeProfilePage() {
     }
   };
 
+  const handleAddSystem = async () => {
+    if (!newSystemType || !home) return;
+    setAddingSystem(true);
+    try {
+      const res = await fetch("/api/systems", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          homeId: home.id,
+          systemType: newSystemType,
+          subtype: newSystemSubtype || "standard",
+        }),
+      });
+      if (res.ok) {
+        setAddSystemOpen(false);
+        setNewSystemType("");
+        setNewSystemSubtype("");
+        fetchAll();
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setAddingSystem(false);
+    }
+  };
+
+  const handleDeleteSystem = async (systemId: string) => {
+    setDeletingSystemId(systemId);
+    try {
+      const res = await fetch("/api/systems", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: systemId }),
+      });
+      if (res.ok) {
+        setSystems((prev) => prev.filter((s) => s.id !== systemId));
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setDeletingSystemId(null);
+    }
+  };
+
+  const handleAddAppliance = async () => {
+    if (!newApplianceName.trim() || !newApplianceCategory || !home) return;
+    setAddingAppliance(true);
+    try {
+      const res = await fetch("/api/appliances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          homeId: home.id,
+          name: newApplianceName.trim(),
+          category: newApplianceCategory,
+        }),
+      });
+      if (res.ok) {
+        setAddApplianceOpen(false);
+        setNewApplianceName("");
+        setNewApplianceCategory("");
+        fetchAll();
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setAddingAppliance(false);
+    }
+  };
+
+  const handleDeleteAppliance = async (applianceId: string) => {
+    setDeletingApplianceId(applianceId);
+    try {
+      const res = await fetch("/api/appliances", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: applianceId }),
+      });
+      if (res.ok) {
+        setApplianceList((prev) => prev.filter((a) => a.id !== applianceId));
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setDeletingApplianceId(null);
+    }
+  };
+
+  // Available system types not yet added
+  const availableSystemTypes = Object.keys(SYSTEM_LABELS).filter(
+    (key) => !systems.some((s) => s.systemType === key)
+  );
+
   // Group appliances by area
   const appliancesByGroup = applianceList.reduce<Record<string, ApplianceData[]>>((acc, a) => {
     const group = APPLIANCE_GROUP_LABELS[a.category ?? "other"] ?? "Other";
@@ -485,30 +594,113 @@ export default function HomeProfilePage() {
       </div>
 
       {/* ---- Systems ---- */}
-      {systems.length > 0 && (
-        <section>
-          <h2 className="text-[15px] font-bold mb-3">Systems</h2>
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[15px] font-bold">Systems</h2>
+          {availableSystemTypes.length > 0 && (
+            <button
+              onClick={() => setAddSystemOpen(true)}
+              className="text-[13px] font-semibold text-[var(--color-primary-600)] flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add &rarr;
+            </button>
+          )}
+        </div>
+        {systems.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[var(--color-neutral-200)] p-6 text-center">
+            <Wrench className="mx-auto h-8 w-8 text-neutral-300 mb-2" />
+            <p className="text-sm text-[var(--color-neutral-400)]">
+              No systems yet. Add your home systems to get tailored tasks.
+            </p>
+          </div>
+        ) : (
           <div className="flex flex-wrap gap-2">
             {systems.map((s) => {
               const info = SYSTEM_LABELS[s.systemType] ?? { emoji: "\u{1F527}", label: s.systemType };
+              const isDeleting = deletingSystemId === s.id;
               return (
-                <div key={s.id} className="flex items-center gap-2 bg-white border border-[var(--color-neutral-200)] rounded-xl px-3.5 py-2.5">
+                <div key={s.id} className={`flex items-center gap-2 bg-white border border-[var(--color-neutral-200)] rounded-xl px-3.5 py-2.5 ${isDeleting ? "opacity-30" : ""}`}>
                   <span className="text-[16px]">{info.emoji}</span>
                   <div>
                     <span className="text-[13px] font-semibold">{info.label}</span>
-                    {s.subtype && <span className="text-[11px] text-[var(--color-neutral-400)] ml-1.5">{s.subtype}</span>}
+                    {s.subtype && s.subtype !== "standard" && <span className="text-[11px] text-[var(--color-neutral-400)] ml-1.5">{s.subtype}</span>}
                   </div>
+                  <button
+                    onClick={() => handleDeleteSystem(s.id)}
+                    disabled={isDeleting}
+                    className="p-0.5 text-neutral-300 hover:text-red-500 transition-colors ml-1"
+                    title="Remove system"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               );
             })}
           </div>
-        </section>
-      )}
+        )}
+
+        {/* Add System Dialog */}
+        <Dialog open={addSystemOpen} onClose={() => setAddSystemOpen(false)} title="Add System" size="sm">
+          <div className="space-y-4 mt-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">System Type</label>
+              <select
+                value={newSystemType}
+                onChange={(e) => setNewSystemType(e.target.value)}
+                className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              >
+                <option value="">Select a system...</option>
+                {availableSystemTypes.map((key) => (
+                  <option key={key} value={key}>
+                    {SYSTEM_LABELS[key]?.emoji} {SYSTEM_LABELS[key]?.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Input
+              label="Subtype (optional)"
+              placeholder="e.g. central, split, tankless"
+              value={newSystemSubtype}
+              onChange={(e) => setNewSystemSubtype(e.target.value)}
+            />
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={handleAddSystem}
+                disabled={!newSystemType || addingSystem}
+              >
+                {addingSystem ? "Adding..." : "Add System"}
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setAddSystemOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      </section>
 
       {/* ---- Appliances ---- */}
-      {applianceList.length > 0 && (
-        <section>
-          <h2 className="text-[15px] font-bold mb-3">Appliances</h2>
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[15px] font-bold">Appliances</h2>
+          <button
+            onClick={() => setAddApplianceOpen(true)}
+            className="text-[13px] font-semibold text-[var(--color-primary-600)] flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add &rarr;
+          </button>
+        </div>
+        {applianceList.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[var(--color-neutral-200)] p-6 text-center">
+            <Wrench className="mx-auto h-8 w-8 text-neutral-300 mb-2" />
+            <p className="text-sm text-[var(--color-neutral-400)]">
+              No appliances yet. Add your appliances to track warranties and maintenance.
+            </p>
+          </div>
+        ) : (
           <div className="bg-white rounded-2xl border border-[var(--color-neutral-200)] overflow-hidden">
             {Object.entries(appliancesByGroup).map(([group, items]) => (
               <div key={group}>
@@ -518,10 +710,11 @@ export default function HomeProfilePage() {
                 {items.map((a, idx) => {
                   const warranty = warrantyStatus(a.warrantyExpiry);
                   const isLast = idx === items.length - 1;
+                  const isDeleting = deletingApplianceId === a.id;
                   return (
                     <div
                       key={a.id}
-                      className={`flex items-center justify-between px-4 py-3 ${isLast ? "" : "border-b border-[var(--color-neutral-100)]"}`}
+                      className={`flex items-center justify-between px-4 py-3 ${isLast ? "" : "border-b border-[var(--color-neutral-100)]"} ${isDeleting ? "opacity-30" : ""}`}
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold truncate">{a.name}</p>
@@ -529,19 +722,70 @@ export default function HomeProfilePage() {
                           {[a.brand, a.model].filter(Boolean).join(" ") || "No details"}
                         </p>
                       </div>
-                      {a.warrantyExpiry && (
-                        <Badge variant={warranty.variant} size="sm">
-                          {warranty.label}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {a.warrantyExpiry && (
+                          <Badge variant={warranty.variant} size="sm">
+                            {warranty.label}
+                          </Badge>
+                        )}
+                        <button
+                          onClick={() => handleDeleteAppliance(a.id)}
+                          disabled={isDeleting}
+                          className="p-1.5 text-neutral-400 hover:text-red-500 transition-colors"
+                          title="Remove appliance"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+
+        {/* Add Appliance Dialog */}
+        <Dialog open={addApplianceOpen} onClose={() => setAddApplianceOpen(false)} title="Add Appliance" size="sm">
+          <div className="space-y-4 mt-2">
+            <Input
+              label="Appliance Name"
+              placeholder="e.g. Samsung Refrigerator"
+              value={newApplianceName}
+              onChange={(e) => setNewApplianceName(e.target.value)}
+              required
+            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">Category</label>
+              <select
+                value={newApplianceCategory}
+                onChange={(e) => setNewApplianceCategory(e.target.value)}
+                className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              >
+                <option value="">Select a category...</option>
+                {Object.entries(APPLIANCE_GROUP_LABELS).map(([key, group]) => (
+                  <option key={key} value={key}>
+                    {key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} ({group})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={handleAddAppliance}
+                disabled={!newApplianceName.trim() || !newApplianceCategory || addingAppliance}
+              >
+                {addingAppliance ? "Adding..." : "Add Appliance"}
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setAddApplianceOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      </section>
 
       {/* ---- Members ---- */}
       <MembersSection />
