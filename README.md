@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pico Home
 
-## Getting Started
+Home-maintenance tracking that tells homeowners **what to do, when, and why**.
+~104 expert task templates matched to your home's systems, appliances, and
+household; day-one starter tasks; seasonal scheduling; a maintenance score;
+shared household lists; push + email reminders.
 
-First, run the development server:
+**Production:** https://picohome.app
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · Tailwind 4 · Drizzle ORM on Supabase
+Postgres · Supabase Auth (Google OAuth) · Resend (email) · web-push · Sentry ·
+Vitest · Vercel (crons + hosting) · Capacitor shells (not yet shipped)
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000 (uses .env.local)
+npm test             # vitest — unit tests for scheduling/matching/schemas
+npx tsc --noEmit     # typecheck
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.example` lists required variables. Local Google sign-in requires
+`http://localhost:3000/**` in the Supabase redirect allowlist.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database & migrations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The Drizzle journal is historical; SQL under `drizzle/` is applied with the
+idempotent runner:
 
-## Learn More
+```bash
+node scripts/apply-phase0-sql.mjs
+```
 
-To learn more about Next.js, take a look at the following resources:
+Row access is API-only: PostgREST grants are revoked; storage policies use a
+`SECURITY DEFINER` membership helper.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Operations
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Crons** (`vercel.json`): health-score 06:00 UTC · push 13:00 UTC · digest
+  10:00 UTC daily (per-user Monday gate). Cron routes answer **GET** with
+  `CRON_SECRET` bearer auth; sends are once-per-user-per-day via
+  `notification_log`.
+- **Deploys**: `git push` should auto-deploy; if the Git integration stalls,
+  `npx vercel deploy --prod`.
+- **Errors**: Sentry (project still under its legacy name) via
+  `src/instrumentation*.ts`.
 
-## Deploy on Vercel
+## Docs
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Product/architecture/schema/roadmap: Notion → 🏠 Pico Home Documentation Hub
+- Pre-launch audit & verified fixes: internal artifact (see Notion hub)
+- Design specs and plans: `docs/superpowers/`
